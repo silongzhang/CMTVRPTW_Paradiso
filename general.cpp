@@ -14,7 +14,7 @@ double setPrecision(const double data, const int numFloat) {
 
 
 // Read Solomon instance.
-Instance_Solomon readSolomonInstance(const string &input) {
+Instance_Solomon readSolomonInstance(const string &input, const int numVer) {
 	Instance_Solomon result;
 	try {
 		ifstream ins(input);
@@ -40,8 +40,8 @@ Instance_Solomon readSolomonInstance(const string &input) {
 
 		int iter = -1;
 		Customer_Solomon cust;
-		for (ins >> cust.id; !ins.eof(); ins >> cust.id) {
-			if (++iter != cust.id) throw exception("Input file Error.");
+		for (ins >> cust.id; !ins.eof() && ++iter < numVer; ins >> cust.id) {
+			if (iter != cust.id) throw exception("Input file Error.");
 			ins >> cust.xCoord >> cust.yCoord >> cust.demand >> cust.readyTime >> cust.dueTime >> cust.serviceTime;
 			result.vertices.push_back(cust);
 		}

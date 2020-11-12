@@ -877,7 +877,7 @@ void readDataSolomonESPPRC(const Instance_Solomon &inst, Data_Input_ESPPRC &data
 			data.TimeWindow[i].first = inst.vertices[i].readyTime;
 			data.TimeWindow[i].second = inst.vertices[i].dueTime;
 			data.DistanceWindow[i].first = 0;
-			data.DistanceWindow[i].second = data.TimeWindow[0].second * coefDist;
+			data.DistanceWindow[i].second = (lessThanReal(coefDist, 0, PPM) ? InfinityPos : data.TimeWindow[0].second * coefDist);
 
 			for (int j = 0; j < data.NumVertices; ++j) {
 				data.Quantity[i][j] = 0.5 * (inst.vertices[i].demand + inst.vertices[j].demand);
@@ -891,7 +891,7 @@ void readDataSolomonESPPRC(const Instance_Solomon &inst, Data_Input_ESPPRC &data
 		}
 	}
 	catch (const exception &exc) {
-		printErrorAndExit("readDataESPPRC", exc);
+		printErrorAndExit("readDataSolomonESPPRC", exc);
 	}
 }
 
