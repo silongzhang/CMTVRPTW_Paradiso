@@ -62,4 +62,7 @@ void readDataSolomonVRPTW(const Instance_Solomon &inst, Data_Input_VRPTW &data, 
 void writeToFileVRPTW(const Data_Input_VRPTW &data, const string &strOutput);
 // Transfer Solomon file to VRPTW data file.
 void transferDataFileVRPTW(const Parameter_TransferDataFileVRPTW &prm, const string &inputSolomon, const string &strOutput, const int precision);
+// Transfer Solomon files in a folder to VRPTW data files.
+void transferDataFileVRPTWFolder(const Parameter_TransferDataFileVRPTW &prm, const string &strInputFolder,
+	const string &strOutputFolder, const int precision);
 

@@ -149,3 +149,22 @@ void transferDataFileVRPTW(const Parameter_TransferDataFileVRPTW &prm, const str
 }
 
 
+// Transfer Solomon files in a folder to VRPTW data files.
+void transferDataFileVRPTWFolder(const Parameter_TransferDataFileVRPTW &prm, const string &strInputFolder, 
+	const string &strOutputFolder, const int precision) {
+	try {
+		vector<string> paths;
+		vector<string> names;
+		getFiles(strInputFolder, paths, names);
+		for (const auto &elem : names) {
+			string inputSolomon = strInputFolder + elem;
+			string strOutput = strOutputFolder + elem;
+			transferDataFileVRPTW(prm, inputSolomon, strOutput, precision);
+		}
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("transferDataFileVRPTWFolder", exc);
+	}
+}
+
+

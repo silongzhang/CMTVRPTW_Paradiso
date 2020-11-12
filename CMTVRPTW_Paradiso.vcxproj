@@ -16,7 +16,6 @@
     <ClCompile Include="general.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="CG_VRPTW.cpp" />
-    <ClCompile Include="Test.cpp" />
     <ClCompile Include="VRPTW.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -25,7 +24,6 @@
     <ClInclude Include="general.h" />
     <ClInclude Include="Header.h" />
     <ClInclude Include="CG_VRPTW.h" />
-    <ClInclude Include="Test.h" />
     <ClInclude Include="VRPTW.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
