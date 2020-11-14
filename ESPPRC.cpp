@@ -947,6 +947,7 @@ void readFromFile(Data_Input_ESPPRC &data, const string &strInput) {
 		string strTemp;
 		getline(ins, strTemp);
 		ins >> data.name >> data.NumVertices;
+		if (Max_Num_Vertex < data.NumVertices) throw exception("Failed file operator.");
 		data.clearAndResize();
 
 		getline(ins, strTemp);

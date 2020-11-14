@@ -9,7 +9,7 @@ constexpr auto DECI = 0.1;
 constexpr auto CENTI = 1e-2;
 constexpr auto MILLI = 1e-3;
 constexpr auto PPM = 1e-6;
-constexpr auto InfinityPos = 9999999999;
+constexpr auto InfinityPos = 1e9;
 constexpr auto InfinityNeg = -InfinityPos;
 
 

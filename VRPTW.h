@@ -65,4 +65,6 @@ void transferDataFileVRPTW(const Parameter_TransferDataFileVRPTW &prm, const str
 // Transfer Solomon files in a folder to VRPTW data files.
 void transferDataFileVRPTWFolder(const Parameter_TransferDataFileVRPTW &prm, const string &strInputFolder,
 	const string &strOutputFolder, const int precision);
+// Read input data from file.
+void readFromFileVRPTW(Data_Input_VRPTW &data, const string &strInput);
 

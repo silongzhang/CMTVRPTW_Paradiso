@@ -168,3 +168,62 @@ void transferDataFileVRPTWFolder(const Parameter_TransferDataFileVRPTW &prm, con
 }
 
 
+// Read input data from file.
+void readFromFileVRPTW(Data_Input_VRPTW &data, const string &strInput) {
+	try {
+		ifstream ins(strInput);
+		if (!ins) throw exception("Failed file operator.");
+
+		string strTemp;
+		getline(ins, strTemp);
+		ins >> data.name >> data.NumVertices >> data.MaxNumVehicles >> data.capacity;
+		if (Max_Num_Vertex < data.NumVertices) throw exception("Failed file operator.");
+		data.clearAndResize();
+
+		getline(ins, strTemp);
+		getline(ins, strTemp);
+		for (int i = 0; i < data.NumVertices; ++i) {
+			ins >> data.QuantityWindow[i].first >> data.QuantityWindow[i].second >>
+				data.DistanceWindow[i].first >> data.DistanceWindow[i].second >>
+				data.TimeWindow[i].first >> data.TimeWindow[i].second;
+		}
+
+		getline(ins, strTemp);
+		getline(ins, strTemp);
+		read2(ins, data.Quantity);
+
+		getline(ins, strTemp);
+		getline(ins, strTemp);
+		read2(ins, data.Distance);
+
+		getline(ins, strTemp);
+		getline(ins, strTemp);
+		read2(ins, data.Time);
+
+		getline(ins, strTemp);
+		getline(ins, strTemp);
+		read2(ins, data.RealCost);
+
+		getline(ins, strTemp);
+		getline(ins, strTemp);
+		vector<vector<int>> vec2Int(data.NumVertices);
+		for (auto &elem : vec2Int) {
+			elem.resize(data.NumVertices);
+		}
+		read2(ins, vec2Int);
+		for (int i = 0; i < data.NumVertices; ++i) {
+			for (int j = 0; j < data.NumVertices; ++j) {
+				if (vec2Int[i][j] == 0) data.ExistingArcs[i][j] = false;
+				else if (vec2Int[i][j] == 1) data.ExistingArcs[i][j] = true;
+				else throw exception("Failed file operator.");
+			}
+		}
+
+		ins.close();
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("readFromFileVRPTW", exc);
+	}
+}
+
+
