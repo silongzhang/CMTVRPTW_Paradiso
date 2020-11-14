@@ -15,6 +15,7 @@ public:
 	double getCost() const { return cost; }
 	void reset() { routes.clear(); cost = 0; }
 	void addRoute(const double weight, const Route_VRPTW &rhs) { routes.push_back(make_pair(weight, rhs)); cost += weight * rhs.getRealCost(); }
+	void print(ostream &output) const;
 };
 
 

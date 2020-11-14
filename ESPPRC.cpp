@@ -807,6 +807,7 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> DPAlgorithmESPPRC(const Data
 		auxiliary.onlyPotential = true;
 		auxiliary.ub = InfinityPos;
 		resultUB = coreDPAlgorithmESPPRC(data, auxiliary, output);
+		if (resultUB.empty()) throw exception();
 		auxiliary.timeUB = runTime(auxiliary.lastTime);
 		strLog = "Elapsed time: " + numToStr(runTime(auxiliary.startTime)) + '\t' + "The upper bound computing is finished." + '\n';
 		print(data.allowPrintLog, output, strLog);
@@ -814,7 +815,7 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> DPAlgorithmESPPRC(const Data
 		auxiliary.onlyPotential = false;
 		auxiliary.ub = resultUB.begin()->getReducedCost();
 		auxiliary.lastTime = clock();
-		if (data.mustOptimal || lessThanReal(runTime(auxiliary.startTime), data.minRunTime, PPM) || greaterThanReal(auxiliary.ub, data.maxReducedCost, PPM)) {
+		if (data.mustOptimal || lessThanReal(runTime(auxiliary.startTime), data.minRunTime, PPM) || !lessThanReal(auxiliary.ub, data.maxReducedCost, PPM)) {
 			// DP Algorithm
 			strLog = "Elapsed time: " + numToStr(runTime(auxiliary.startTime)) + '\t' + "Begin the DP procedure." + '\n';
 			print(data.allowPrintLog, output, strLog);

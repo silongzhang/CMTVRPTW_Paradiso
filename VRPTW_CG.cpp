@@ -1,6 +1,21 @@
 #include"VRPTW_CG.h"
 
 
+void Solution_VRPTW_CG::print(ostream &output) const {
+	try {
+		output << "Total cost: " << cost << '\t' << "Number of routes: " << routes.size() << endl;
+		for (const auto &elem : routes) {
+			output << "Weight: " << elem.first << '\t' << "Cost: " << elem.second.getRealCost() << '\t' << "Sequence: ";
+			for (const auto &vertex : elem.second.getPath()) output << vertex << '\t';
+			output << endl;
+		}
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("Solution_VRPTW_CG::print", exc);
+	}
+}
+
+
 unordered_map<int, int> getCount(const vector<int> &vec) {
 	unordered_map<int, int> unMp;
 	for (const auto &i : vec) {
@@ -107,6 +122,9 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 	IloEnv env;
 	Solution_VRPTW_CG sol;
 	try {
+		string strLog = "Begin running the procedure titled VRPTW_CG::columnGeneration.";
+		print(prm.allowPrintLog, output, strLog);
+
 		// Define the model of restricted master problem.
 		IloModel modelRMP(env);
 
@@ -114,9 +132,9 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 		IloObjective objectiveRMP = IloAdd(modelRMP, IloMinimize(env));
 
 		// Define bounds of constraints of restricted master problem.
-		IloNumArray rightSide(env, inputESPPRC.NumVertices);
-		for (int i = 1; i < inputESPPRC.NumVertices; ++i) rightSide[i] = 1;
-		IloRangeArray constraintRMP = IloAdd(modelRMP, IloRangeArray(env, rightSide, rightSide));
+		IloNumArray leftSide(env, inputESPPRC.NumVertices);
+		for (int i = 1; i < inputESPPRC.NumVertices; ++i) leftSide[i] = 1;
+		IloRangeArray constraintRMP = IloAdd(modelRMP, IloRangeArray(env, leftSide, IloInfinity));
 
 		// Define the variables of restricted master problem.
 		IloNumVarArray X(env);
@@ -128,11 +146,10 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 		IloCplex solverRMP(modelRMP);
 //		solverRMP.setOut(env.getNullStream());
 
-		string strLog;
 		int iter = 0;
 		do {
 			// Solve the RMP.
-			strLog = "\n\n\nSolve the master problem for the " + numToStr(++iter) + "th time.";
+			strLog = "\nSolve the master problem for the " + numToStr(++iter) + "th time.";
 			print(prm.allowPrintLog, output, strLog);
 			solveModel(solverRMP);
 
@@ -149,18 +166,23 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 				}
 			}
 
-			// Set parameters for ESPPRC.
-			input.graphStatistics();
-			input.mustOptimal = lessThanReal(input.percentNegArcs, prm.thresholdPercentNegArcs, PPM);
-			strLog = "The proportion of negative arcs is: " + numToStr(input.percentNegArcs);
-			print(prm.allowPrintLog, output, strLog);
-
 			// Solve the subproblem.
 			Data_Auxiliary_ESPPRC auxiliary;
+			input.mustOptimal = false;
+			input.minRunTime = 0;
+			vector<double> mrt = { 1,5,10 };
 			auto resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
+			for (auto posMRT = mrt.begin(); resultSP.empty() && posMRT != mrt.end(); ++posMRT) {
+				input.minRunTime = *posMRT;
+				resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
+			}
+			if (resultSP.empty()) {
+				input.mustOptimal = true;
+				resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
+			}
 
 			// Stopping criterion for iteration.
-			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, PPM)) break;
+			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, 0)) break;
 
 			// Add new columns.
 			for (const auto &elem : resultSP) {
@@ -173,6 +195,9 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 
 		// Get a solution.
 		sol = (prm.canBeFractional ? getSolution(modelRMP, solverRMP, X) : getAnIntegralSolution(modelRMP, solverRMP, X));
+
+		strLog = "\nThe procedure titled VRPTW_CG::columnGeneration is finished.";
+		print(prm.allowPrintLog, output, strLog);
 	}
 	catch (const exception &exc) {
 		printErrorAndExit("VRPTW_CG::columnGeneration", exc);

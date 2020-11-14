@@ -252,7 +252,6 @@ Data_Input_ESPPRC setParametersInputESPPRCFromInputVRPTW(const Data_Input_VRPTW 
 		inputESPPRC.incrementQuantLB = floor((inputESPPRC.QuantityWindow[0].second - inputESPPRC.QuantityWindow[0].first) / inputESPPRC.sizeQuantLB);
 		inputESPPRC.incrementDistLB = floor((inputESPPRC.DistanceWindow[0].second - inputESPPRC.DistanceWindow[0].first) / inputESPPRC.sizeDistLB);
 		inputESPPRC.incrementTimeLB = floor((inputESPPRC.TimeWindow[0].second - inputESPPRC.TimeWindow[0].first) / inputESPPRC.sizeTimeLB);
-		inputESPPRC.minRunTime = 1;
 		inputESPPRC.maxDominanceTime = 60;
 		inputESPPRC.maxRunTime = 3600;
 		inputESPPRC.maxNumCandidates = 1e7;
@@ -336,7 +335,7 @@ double lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW) {
 
 		// Set parameters for CG algorithm.
 		Parameter_VRPTW_CG prm;
-		prm.canBeFractional = false;
+		prm.canBeFractional = true;
 		prm.thresholdPercentNegArcs = 0.01;
 		prm.allowPrintLog = true;
 
@@ -351,19 +350,39 @@ double lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW) {
 }
 
 
-void test(const string &strInput) {
+void testVRPTWCG() {
 	try {
-		// Read instance data.
 		Data_Input_VRPTW inputVRPTW;
-		readFromFileVRPTW(inputVRPTW, strInput);
 		inputVRPTW.constrainResource = { true,false,true };
-		inputVRPTW.preprocess();
 
-		// Get the value of a lower bound at the root node of BP tree.
-		cout << lbAtCGRootNodeVRPTW(inputVRPTW) << endl;
+		string outFile = "data//CMTVRPTW//Test//2020.11.14.TestVRPTWCG.txt";
+		ofstream os(outFile);
+		if (!os) throw exception();
+		os << "Name" << '\t' << "NumVertices" << '\t' << "Capacity" << '\t' << "Density" << '\t' << "Lower bound" << '\t' << "Running Time (s)" << endl;
+
+		vector<string> folders = { "data//CMTVRPTW//Solomon Type 2 - 25//", 
+			"data//CMTVRPTW//Solomon Type 2 - 40//", 
+			"data//CMTVRPTW//Solomon Type 2 - 50//" };
+		vector<string> names;
+		getFiles(folders[0], vector<string>(), names);
+
+		clock_t start = clock();
+		for (const auto &folder : folders) {
+			for (const auto &name : names) {
+				string strInput = folder + name;
+				readFromFileVRPTW(inputVRPTW, strInput);
+				inputVRPTW.preprocess();
+				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << '\t' << "Time: " << runTime(start) << endl;
+
+				clock_t last = clock();
+				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t'
+					<< inputVRPTW.density << '\t' << lbAtCGRootNodeVRPTW(inputVRPTW) << '\t' << runTime(last) << endl;
+			}
+		}
+		os.close();
 	}
 	catch (const exception &exc) {
-		printErrorAndExit("test", exc);
+		printErrorAndExit("testVRPTWCG", exc);
 	}
 }
 

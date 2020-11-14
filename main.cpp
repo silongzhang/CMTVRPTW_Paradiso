@@ -3,9 +3,9 @@
 
 
 int main(int argc, char** argv) {
-	string strInput = "data//CMTVRPTW//Solomon Type 2 - 25//C201.txt";
-	test(strInput);
+	testVRPTWCG();
 
 	return 0;
 }
+
 
