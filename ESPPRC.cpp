@@ -834,10 +834,13 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> DPAlgorithmESPPRC(const Data
 		printErrorAndExit("DPAlgorithmESPPRC", exc);
 	}
 
-	multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> &alternative =
-		(lessThanReal(resultDP.begin()->getReducedCost(), resultUB.begin()->getReducedCost(), PPM) ? resultDP : resultUB);
+	multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> *alternative;
+	if (resultDP.empty()) alternative = &resultUB;
+	else {
+		alternative = (lessThanReal(resultDP.begin()->getReducedCost(), resultUB.begin()->getReducedCost(), PPM) ? &resultDP : &resultUB);
+	}
 	multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> result;
-	for (auto pt = alternative.begin(); pt != alternative.end() && lessThanReal(pt->getReducedCost(), data.maxReducedCost, PPM); ++pt) {
+	for (auto pt = alternative->begin(); pt != alternative->end() && lessThanReal(pt->getReducedCost(), data.maxReducedCost, PPM); ++pt) {
 		result.insert(*pt);
 	}
 	return result;

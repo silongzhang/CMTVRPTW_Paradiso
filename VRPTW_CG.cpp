@@ -170,8 +170,9 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 			Data_Auxiliary_ESPPRC auxiliary;
 			input.mustOptimal = false;
 			input.minRunTime = 0;
-			vector<double> mrt = { 1,5,10 };
 			auto resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
+			/*
+			vector<double> mrt = { 1,5 };
 			for (auto posMRT = mrt.begin(); resultSP.empty() && posMRT != mrt.end(); ++posMRT) {
 				input.minRunTime = *posMRT;
 				resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
@@ -180,9 +181,14 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 				input.mustOptimal = true;
 				resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
 			}
+			*/
 
 			// Stopping criterion for iteration.
-			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, 0)) break;
+			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, 0)) {
+				input.mustOptimal = true;
+				resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
+				if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, 0)) break;
+			}
 
 			// Add new columns.
 			for (const auto &elem : resultSP) {
