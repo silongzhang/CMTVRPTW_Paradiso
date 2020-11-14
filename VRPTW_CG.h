@@ -6,7 +6,7 @@ typedef Label_ESPPRC Route_VRPTW;
 typedef Consumption_ESPPRC Consumption_VRPTW;
 typedef Cost_ESPPRC Cost_VRPTW;
 
-class Solution_VRPTW {
+class Solution_VRPTW_CG {
 private:
 	vector<pair<double, Route_VRPTW>> routes;
 	double cost;
@@ -18,7 +18,7 @@ public:
 };
 
 
-class Parameter_CG_VRPTW {
+class Parameter_VRPTW_CG {
 public:
 	// Whether the solution can be fractional.
 	bool canBeFractional;
@@ -29,17 +29,17 @@ public:
 };
 
 
-class CG_VRPTW {
+class VRPTW_CG {
 private:
 	list<Route_VRPTW> columns;
 public:
 	void clearColumns() { columns.clear(); }
 	void addColumn(const Route_VRPTW &rhs, IloObjective &objectiveRMP, IloRangeArray &constraintRMP, IloNumVarArray &X);
 	void InitiateRMP(const vector<Route_VRPTW> &initialRoutes, IloObjective &objectiveRMP, IloRangeArray &constraintRMP, IloNumVarArray &X);
-	Solution_VRPTW getSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X);
-	Solution_VRPTW getAnIntegralSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X);
-	Solution_VRPTW columnGeneration(const Data_Input_ESPPRC &inputESPPRC, const vector<Route_VRPTW> &initialRoutes, 
-		const Parameter_CG_VRPTW &prm, ostream &output);
+	Solution_VRPTW_CG getSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X);
+	Solution_VRPTW_CG getAnIntegralSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X);
+	Solution_VRPTW_CG columnGeneration(const Data_Input_ESPPRC &inputESPPRC, const vector<Route_VRPTW> &initialRoutes, 
+		const Parameter_VRPTW_CG &prm, ostream &output);
 };
 
 

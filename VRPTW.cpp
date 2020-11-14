@@ -31,6 +31,8 @@ void Data_Input_VRPTW::preprocess() {
 	try {
 		Data_Input_ESPPRC inputESPPRC;
 		inputESPPRC.NumVertices = NumVertices;
+		inputESPPRC.clearAndResize();
+
 		inputESPPRC.Quantity = Quantity;
 		inputESPPRC.QuantityWindow = QuantityWindow;
 		inputESPPRC.Distance = Distance;
@@ -257,7 +259,7 @@ Data_Input_ESPPRC setParametersInputESPPRCFromInputVRPTW(const Data_Input_VRPTW 
 		inputESPPRC.maxReducedCost = 0;
 		inputESPPRC.maxNumRoutesReturned = 100;
 		inputESPPRC.maxNumPotentialEachStep = 1e4;
-		inputESPPRC.allowPrintLog = true;
+		inputESPPRC.allowPrintLog = false;
 		inputESPPRC.dominateUninserted = true;
 		inputESPPRC.dominateInserted = false;
 		inputESPPRC.constrainResource = { true,false,true };
@@ -324,7 +326,7 @@ vector<Route_VRPTW> generateInitialRoutes(const Data_Input_ESPPRC &inputESPPRC) 
 
 // Get the value of a lower bound at the root node of BP tree.
 double lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW) {
-	Solution_VRPTW sol;
+	Solution_VRPTW_CG sol;
 	try {
 		// Set parameters of Data_Input_ESPPRC.
 		Data_Input_ESPPRC inputESPPRC = setParametersInputESPPRCFromInputVRPTW(inputVRPTW);
@@ -333,13 +335,13 @@ double lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW) {
 		vector<Route_VRPTW> initialRoutes = generateInitialRoutes(inputESPPRC);
 
 		// Set parameters for CG algorithm.
-		Parameter_CG_VRPTW prm;
-		prm.canBeFractional = true;
+		Parameter_VRPTW_CG prm;
+		prm.canBeFractional = false;
 		prm.thresholdPercentNegArcs = 0.01;
 		prm.allowPrintLog = true;
 
 		// Run the CG algorithm.
-		CG_VRPTW cg;
+		VRPTW_CG cg;
 		sol = cg.columnGeneration(inputESPPRC, initialRoutes, prm, cout);
 	}
 	catch (const exception &exc) {
@@ -354,6 +356,7 @@ void test(const string &strInput) {
 		// Read instance data.
 		Data_Input_VRPTW inputVRPTW;
 		readFromFileVRPTW(inputVRPTW, strInput);
+		inputVRPTW.constrainResource = { true,false,true };
 		inputVRPTW.preprocess();
 
 		// Get the value of a lower bound at the root node of BP tree.

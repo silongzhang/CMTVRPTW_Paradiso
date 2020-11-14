@@ -15,7 +15,7 @@
     <ClCompile Include="ESPPRC.cpp" />
     <ClCompile Include="general.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="CG_VRPTW.cpp" />
+    <ClCompile Include="VRPTW_CG.cpp" />
     <ClCompile Include="VRPTW.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -23,7 +23,7 @@
     <ClInclude Include="ESPPRC.h" />
     <ClInclude Include="general.h" />
     <ClInclude Include="Header.h" />
-    <ClInclude Include="CG_VRPTW.h" />
+    <ClInclude Include="VRPTW_CG.h" />
     <ClInclude Include="VRPTW.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

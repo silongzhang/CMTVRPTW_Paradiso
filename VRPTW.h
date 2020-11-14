@@ -5,7 +5,7 @@
 #include"define.h"
 #include"general.h"
 #include"ESPPRC.h"
-#include"CG_VRPTW.h"
+#include"VRPTW_CG.h"
 
 
 class Data_Input_VRPTW {

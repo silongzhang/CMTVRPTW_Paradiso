@@ -1,4 +1,4 @@
-#include"CG_VRPTW.h"
+#include"VRPTW_CG.h"
 
 
 unordered_map<int, int> getCount(const vector<int> &vec) {
@@ -11,7 +11,7 @@ unordered_map<int, int> getCount(const vector<int> &vec) {
 }
 
 
-void CG_VRPTW::addColumn(const Route_VRPTW &rhs, IloObjective &objectiveRMP, IloRangeArray &constraintRMP, IloNumVarArray &X) {
+void VRPTW_CG::addColumn(const Route_VRPTW &rhs, IloObjective &objectiveRMP, IloRangeArray &constraintRMP, IloNumVarArray &X) {
 	try {
 		// Add the column.
 		columns.push_back(rhs);
@@ -33,12 +33,12 @@ void CG_VRPTW::addColumn(const Route_VRPTW &rhs, IloObjective &objectiveRMP, Ilo
 		col.end();
 	}
 	catch (const exception &exc) {
-		printErrorAndExit("CG_VRPTW::addColumn", exc);
+		printErrorAndExit("VRPTW_CG::addColumn", exc);
 	}
 }
 
 
-void CG_VRPTW::InitiateRMP(const vector<Route_VRPTW> &initialRoutes, IloObjective &objectiveRMP, IloRangeArray &constraintRMP, IloNumVarArray &X) {
+void VRPTW_CG::InitiateRMP(const vector<Route_VRPTW> &initialRoutes, IloObjective &objectiveRMP, IloRangeArray &constraintRMP, IloNumVarArray &X) {
 	try {
 		clearColumns();
 		for (const auto &rhs : initialRoutes) {
@@ -46,7 +46,7 @@ void CG_VRPTW::InitiateRMP(const vector<Route_VRPTW> &initialRoutes, IloObjectiv
 		}
 	}
 	catch (const exception &exc) {
-		printErrorAndExit("CG_VRPTW::InitiateRMP", exc);
+		printErrorAndExit("VRPTW_CG::InitiateRMP", exc);
 	}
 }
 
@@ -60,8 +60,8 @@ double solveModel(IloCplex &solver) {
 
 
 // Get a solution (may be fractional).
-Solution_VRPTW CG_VRPTW::getSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X) {
-	Solution_VRPTW sol;
+Solution_VRPTW_CG VRPTW_CG::getSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X) {
+	Solution_VRPTW_CG sol;
 	sol.reset();
 	try {
 		auto env = modelRMP.getEnv();
@@ -74,15 +74,15 @@ Solution_VRPTW CG_VRPTW::getSolution(IloModel &modelRMP, IloCplex &solverRMP, Il
 		}
 	}
 	catch (const exception &exc) {
-		printErrorAndExit("CG_VRPTW::getSolution", exc);
+		printErrorAndExit("VRPTW_CG::getSolution", exc);
 	}
 	return sol;
 }
 
 
 // Get an integer solution.
-Solution_VRPTW CG_VRPTW::getAnIntegralSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X) {
-	Solution_VRPTW sol;
+Solution_VRPTW_CG VRPTW_CG::getAnIntegralSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X) {
+	Solution_VRPTW_CG sol;
 	sol.reset();
 	try {
 		auto env = modelRMP.getEnv();
@@ -96,16 +96,16 @@ Solution_VRPTW CG_VRPTW::getAnIntegralSolution(IloModel &modelRMP, IloCplex &sol
 		}
 	}
 	catch (const exception &exc) {
-		printErrorAndExit("CG_VRPTW::getAnIntegralSolution", exc);
+		printErrorAndExit("VRPTW_CG::getAnIntegralSolution", exc);
 	}
 	return sol;
 }
 
 
-Solution_VRPTW CG_VRPTW::columnGeneration(const Data_Input_ESPPRC &inputESPPRC, const vector<Route_VRPTW> &initialRoutes, 
-	const Parameter_CG_VRPTW &prm, ostream &output) {
+Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPRC, const vector<Route_VRPTW> &initialRoutes, 
+	const Parameter_VRPTW_CG &prm, ostream &output) {
 	IloEnv env;
-	Solution_VRPTW sol;
+	Solution_VRPTW_CG sol;
 	try {
 		// Define the model of restricted master problem.
 		IloModel modelRMP(env);
@@ -126,13 +126,13 @@ Solution_VRPTW CG_VRPTW::columnGeneration(const Data_Input_ESPPRC &inputESPPRC, 
 
 		// Define the solver of restricted master problem.
 		IloCplex solverRMP(modelRMP);
-		solverRMP.setOut(env.getNullStream());
+//		solverRMP.setOut(env.getNullStream());
 
 		string strLog;
 		int iter = 0;
 		do {
 			// Solve the RMP.
-			strLog = "Solve the master problem for the " + numToStr(++iter) + "th time." + '\n';
+			strLog = "\n\n\nSolve the master problem for the " + numToStr(++iter) + "th time.";
 			print(prm.allowPrintLog, output, strLog);
 			solveModel(solverRMP);
 
@@ -152,25 +152,30 @@ Solution_VRPTW CG_VRPTW::columnGeneration(const Data_Input_ESPPRC &inputESPPRC, 
 			// Set parameters for ESPPRC.
 			input.graphStatistics();
 			input.mustOptimal = lessThanReal(input.percentNegArcs, prm.thresholdPercentNegArcs, PPM);
+			strLog = "The proportion of negative arcs is: " + numToStr(input.percentNegArcs);
+			print(prm.allowPrintLog, output, strLog);
 
 			// Solve the subproblem.
 			Data_Auxiliary_ESPPRC auxiliary;
 			auto resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
 
 			// Stopping criterion for iteration.
-			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), 0, PPM)) break;
+			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, PPM)) break;
 
 			// Add new columns.
 			for (const auto &elem : resultSP) {
 				addColumn(elem, objectiveRMP, constraintRMP, X);
 			}
+			strLog = numToStr(resultSP.size()) + " routes are added." + '\t' +
+				"The minimum reduced cost of added routes: " + numToStr(resultSP.begin()->getReducedCost());
+			print(prm.allowPrintLog, output, strLog);
 		} while (true);
 
 		// Get a solution.
 		sol = (prm.canBeFractional ? getSolution(modelRMP, solverRMP, X) : getAnIntegralSolution(modelRMP, solverRMP, X));
 	}
 	catch (const exception &exc) {
-		printErrorAndExit("CG_VRPTW::columnGeneration", exc);
+		printErrorAndExit("VRPTW_CG::columnGeneration", exc);
 	}
 	env.end();
 	return sol;
