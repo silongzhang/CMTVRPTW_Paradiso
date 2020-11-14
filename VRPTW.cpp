@@ -372,11 +372,14 @@ void testVRPTWCG() {
 				string strInput = folder + name;
 				readFromFileVRPTW(inputVRPTW, strInput);
 				inputVRPTW.preprocess();
+				cout << "*****************************************" << endl;
 				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << '\t' << "Time: " << runTime(start) << endl;
 
 				clock_t last = clock();
 				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t'
-					<< inputVRPTW.density << '\t' << lbAtCGRootNodeVRPTW(inputVRPTW) << '\t' << runTime(last) << endl;
+					<< inputVRPTW.density << '\t' << lbAtCGRootNodeVRPTW(inputVRPTW) << '\t';
+				os << runTime(last) << endl;
+				cout << endl << endl << endl;
 			}
 		}
 		os.close();

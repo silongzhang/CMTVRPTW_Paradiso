@@ -820,6 +820,7 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> DPAlgorithmESPPRC(const Data
 			strLog = "Elapsed time: " + numToStr(runTime(auxiliary.startTime)) + '\t' + "Begin the DP procedure." + '\n';
 			print(data.allowPrintLog, output, strLog);
 			resultDP = coreDPAlgorithmESPPRC(data, auxiliary, output);
+			if (resultDP.empty()) throw exception();
 			strLog = "Elapsed time: " + numToStr(runTime(auxiliary.startTime)) + '\t' + "The DP procedure is finished." + '\n';
 			print(data.allowPrintLog, output, strLog);
 		} 
@@ -832,7 +833,14 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> DPAlgorithmESPPRC(const Data
 	catch (const exception &exc) {
 		printErrorAndExit("DPAlgorithmESPPRC", exc);
 	}
-	return (lessThanReal(resultDP.begin()->getReducedCost(), resultUB.begin()->getReducedCost(), PPM) ? resultDP : resultUB);
+
+	multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> &alternative =
+		(lessThanReal(resultDP.begin()->getReducedCost(), resultUB.begin()->getReducedCost(), PPM) ? resultDP : resultUB);
+	multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> result;
+	for (auto pt = alternative.begin(); pt != alternative.end() && lessThanReal(pt->getReducedCost(), data.maxReducedCost, PPM); ++pt) {
+		result.insert(*pt);
+	}
+	return result;
 }
 
 
