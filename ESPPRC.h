@@ -82,6 +82,7 @@ public:
 	vector<bool> applyLB;
 
 	void clearAndResize();
+	void graphStatistics();
 	void preprocess();
 	// Output.
 	void print(ostream &output) const;

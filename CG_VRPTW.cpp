@@ -59,6 +59,28 @@ double solveModel(IloCplex &solver) {
 }
 
 
+// Get a solution (may be fractional).
+Solution_VRPTW CG_VRPTW::getSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X) {
+	Solution_VRPTW sol;
+	sol.reset();
+	try {
+		auto env = modelRMP.getEnv();
+		solveModel(solverRMP);
+		if (columns.size() != X.getSize()) throw exception();
+		auto pos = columns.begin();
+		for (int i = 0; i < X.getSize(); ++i, ++pos) {
+			if (greaterThanReal(solverRMP.getValue(X[i]), 0, PPM)) sol.addRoute(solverRMP.getValue(X[i]), *pos);
+			else if (lessThanReal(solverRMP.getValue(X[i]), 0, PPM)) throw exception();
+		}
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("CG_VRPTW::getSolution", exc);
+	}
+	return sol;
+}
+
+
+// Get an integer solution.
 Solution_VRPTW CG_VRPTW::getAnIntegralSolution(IloModel &modelRMP, IloCplex &solverRMP, IloNumVarArray &X) {
 	Solution_VRPTW sol;
 	sol.reset();
@@ -127,6 +149,10 @@ Solution_VRPTW CG_VRPTW::columnGeneration(const Data_Input_ESPPRC &inputESPPRC, 
 				}
 			}
 
+			// Set parameters for ESPPRC.
+			input.graphStatistics();
+			input.mustOptimal = lessThanReal(input.percentNegArcs, prm.thresholdPercentNegArcs, PPM);
+
 			// Solve the subproblem.
 			Data_Auxiliary_ESPPRC auxiliary;
 			auto resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
@@ -140,8 +166,8 @@ Solution_VRPTW CG_VRPTW::columnGeneration(const Data_Input_ESPPRC &inputESPPRC, 
 			}
 		} while (true);
 
-		// Get an integral solution.
-		sol = getAnIntegralSolution(modelRMP, solverRMP, X);
+		// Get a solution.
+		sol = (prm.canBeFractional ? getSolution(modelRMP, solverRMP, X) : getAnIntegralSolution(modelRMP, solverRMP, X));
 	}
 	catch (const exception &exc) {
 		printErrorAndExit("CG_VRPTW::columnGeneration", exc);

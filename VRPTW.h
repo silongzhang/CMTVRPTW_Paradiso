@@ -5,6 +5,7 @@
 #include"define.h"
 #include"general.h"
 #include"ESPPRC.h"
+#include"CG_VRPTW.h"
 
 
 class Data_Input_VRPTW {
@@ -67,4 +68,14 @@ void transferDataFileVRPTWFolder(const Parameter_TransferDataFileVRPTW &prm, con
 	const string &strOutputFolder, const int precision);
 // Read input data from file.
 void readFromFileVRPTW(Data_Input_VRPTW &data, const string &strInput);
+// Set parameters of Data_Input_ESPPRC.
+Data_Input_ESPPRC setParametersInputESPPRCFromInputVRPTW(const Data_Input_VRPTW &inputVRPTW);
+// Generate a route.
+pair<bool, Route_VRPTW> generateRoute(const Data_Input_ESPPRC &inputESPPRC, const vector<int> &sequence);
+// Generate an initial set of routes.
+vector<Route_VRPTW> generateInitialRoutes(const Data_Input_ESPPRC &inputESPPRC);
+// Get the value of a lower bound at the root node of BP tree.
+double lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW);
+
+void test(const string &strInput);
 

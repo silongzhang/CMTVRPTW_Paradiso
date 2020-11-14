@@ -227,3 +227,140 @@ void readFromFileVRPTW(Data_Input_VRPTW &data, const string &strInput) {
 }
 
 
+// Set parameters of Data_Input_ESPPRC.
+Data_Input_ESPPRC setParametersInputESPPRCFromInputVRPTW(const Data_Input_VRPTW &inputVRPTW) {
+	Data_Input_ESPPRC inputESPPRC;
+	try {
+		inputESPPRC.name = inputVRPTW.name;
+		inputESPPRC.NumVertices = inputVRPTW.NumVertices;
+		inputESPPRC.Quantity = inputVRPTW.Quantity;
+		inputESPPRC.QuantityWindow = inputVRPTW.QuantityWindow;
+		inputESPPRC.Distance = inputVRPTW.Distance;
+		inputESPPRC.DistanceWindow = inputVRPTW.DistanceWindow;
+		inputESPPRC.Time = inputVRPTW.Time;
+		inputESPPRC.TimeWindow = inputVRPTW.TimeWindow;
+		inputESPPRC.RealCost = inputVRPTW.RealCost;
+		inputESPPRC.ReducedCost = inputVRPTW.RealCost;
+		inputESPPRC.UnreachableForever = inputVRPTW.UnreachableForever;
+		inputESPPRC.ExistingArcs = inputVRPTW.ExistingArcs;
+
+		inputESPPRC.sizeQuantLB = 20;
+		inputESPPRC.sizeDistLB = 20;
+		inputESPPRC.sizeTimeLB = 20;
+		inputESPPRC.incrementQuantLB = floor((inputESPPRC.QuantityWindow[0].second - inputESPPRC.QuantityWindow[0].first) / inputESPPRC.sizeQuantLB);
+		inputESPPRC.incrementDistLB = floor((inputESPPRC.DistanceWindow[0].second - inputESPPRC.DistanceWindow[0].first) / inputESPPRC.sizeDistLB);
+		inputESPPRC.incrementTimeLB = floor((inputESPPRC.TimeWindow[0].second - inputESPPRC.TimeWindow[0].first) / inputESPPRC.sizeTimeLB);
+		inputESPPRC.minRunTime = 1;
+		inputESPPRC.maxDominanceTime = 60;
+		inputESPPRC.maxRunTime = 3600;
+		inputESPPRC.maxNumCandidates = 1e7;
+		inputESPPRC.maxReducedCost = 0;
+		inputESPPRC.maxNumRoutesReturned = 100;
+		inputESPPRC.maxNumPotentialEachStep = 1e4;
+		inputESPPRC.allowPrintLog = true;
+		inputESPPRC.dominateUninserted = true;
+		inputESPPRC.dominateInserted = false;
+		inputESPPRC.constrainResource = { true,false,true };
+		inputESPPRC.applyLB = { true,false,true };
+
+		inputESPPRC.preprocess();
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("setParametersInputESPPRCFromInputVRPTW", exc);
+	}
+	return inputESPPRC;
+}
+
+
+// Generate a route.
+pair<bool, Route_VRPTW> generateRoute(const Data_Input_ESPPRC &inputESPPRC, const vector<int> &sequence) {
+	Route_VRPTW route;
+	try {
+		if (sequence.empty()) throw exception();
+		Consumption_VRPTW csp(0, 0, inputESPPRC.TimeWindow[0].first);
+		Cost_VRPTW cst;
+		cst.reset();
+
+		auto pos = sequence.begin();
+		route = Route_VRPTW(inputESPPRC, *pos, csp, cst);
+		for (++pos; pos != sequence.end(); ++pos) {
+			route.extend(inputESPPRC, *pos);
+		}
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("generateRoute", exc);
+	}
+	return make_pair(route.feasible(inputESPPRC), route);
+}
+
+
+// Generate an initial set of routes.
+vector<Route_VRPTW> generateInitialRoutes(const Data_Input_ESPPRC &inputESPPRC) {
+	vector<Route_VRPTW> routes;
+	try {
+		pair<bool, Route_VRPTW> prBoolRoute;
+		for (int i = 1; i < inputESPPRC.NumVertices; ++i) {
+			if (!inputESPPRC.ExistingArcs[0][i]) throw exception();
+			else {
+				prBoolRoute = generateRoute(inputESPPRC, { 0,i,0 });
+				if (!prBoolRoute.first) throw exception();
+				routes.push_back(prBoolRoute.second);
+			}
+			for (int j = 1; j < inputESPPRC.NumVertices; ++j) {
+				if (i != j && inputESPPRC.ExistingArcs[i][j]) {
+					prBoolRoute = generateRoute(inputESPPRC, { 0,i,j,0 });
+					if (!prBoolRoute.first) throw exception();
+					routes.push_back(prBoolRoute.second);
+				}
+			}
+		}
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("generateInitialRoutes", exc);
+	}
+	return routes;
+}
+
+
+// Get the value of a lower bound at the root node of BP tree.
+double lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW) {
+	Solution_VRPTW sol;
+	try {
+		// Set parameters of Data_Input_ESPPRC.
+		Data_Input_ESPPRC inputESPPRC = setParametersInputESPPRCFromInputVRPTW(inputVRPTW);
+		
+		// Generate an initial set of routes.
+		vector<Route_VRPTW> initialRoutes = generateInitialRoutes(inputESPPRC);
+
+		// Set parameters for CG algorithm.
+		Parameter_CG_VRPTW prm;
+		prm.canBeFractional = true;
+		prm.thresholdPercentNegArcs = 0.01;
+		prm.allowPrintLog = true;
+
+		// Run the CG algorithm.
+		CG_VRPTW cg;
+		sol = cg.columnGeneration(inputESPPRC, initialRoutes, prm, cout);
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("lbAtCGRootNodeVRPTW", exc);
+	}
+	return sol.getCost();
+}
+
+
+void test(const string &strInput) {
+	try {
+		// Read instance data.
+		Data_Input_VRPTW inputVRPTW;
+		readFromFileVRPTW(inputVRPTW, strInput);
+		inputVRPTW.preprocess();
+
+		// Get the value of a lower bound at the root node of BP tree.
+		cout << lbAtCGRootNodeVRPTW(inputVRPTW) << endl;
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("test", exc);
+	}
+}
+

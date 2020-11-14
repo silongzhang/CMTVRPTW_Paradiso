@@ -1001,6 +1001,29 @@ void readFromFile(Data_Input_ESPPRC &data, const string &strInput) {
 }
 
 
+void Data_Input_ESPPRC::graphStatistics() {
+	try {
+		numArcs = 0;
+		numNegArcs = 0;
+		for (int i = 0; i < NumVertices; ++i) {
+			for (int j = 0; j < NumVertices; ++j) {
+				if (ExistingArcs[i][j]) {
+					++numArcs;
+					if (lessThanReal(ReducedCost[i][j], 0, PPM)) {
+						++numNegArcs;
+					}
+				}
+			}
+		}
+		density = double(numArcs) / ((NumVertices - 1) * NumVertices);
+		percentNegArcs = double(numNegArcs) / numArcs;
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("Data_Input_ESPPRC::graphStatistics", exc);
+	}
+}
+
+
 void Data_Input_ESPPRC::preprocess() {
 	try {
 		Consumption_ESPPRC csp(0, 0, TimeWindow[0].first);
@@ -1050,20 +1073,7 @@ void Data_Input_ESPPRC::preprocess() {
 			}
 		}
 
-		numArcs = 0;
-		numNegArcs = 0;
-		for (int i = 0; i < NumVertices; ++i) {
-			for (int j = 0; j < NumVertices; ++j) {
-				if (ExistingArcs[i][j]) {
-					++numArcs;
-					if (lessThanReal(ReducedCost[i][j], 0, PPM)) {
-						++numNegArcs;
-					}
-				}
-			}
-		}
-		density = double(numArcs) / ((NumVertices - 1) * NumVertices);
-		percentNegArcs = double(numNegArcs) / numArcs;
+		graphStatistics();
 	}
 	catch (const exception &exc) {
 		printErrorAndExit("Data_Input_ESPPRC::preprocess", exc);
