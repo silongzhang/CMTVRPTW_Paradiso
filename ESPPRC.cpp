@@ -186,30 +186,44 @@ Label_ESPPRC::Label_ESPPRC(const Data_Input_ESPPRC &data, const int origin, cons
 }
 
 
-// Check whether this label is a feasible solution.
-bool Label_ESPPRC::feasible(const Data_Input_ESPPRC &data) const {
+// Get the feasibility and consumption.
+pair<bool, Consumption_ESPPRC> Label_ESPPRC::getFeasibilityAndConsumption(const Data_Input_ESPPRC &data, const TimeType departureTime) const {
+	Consumption_ESPPRC csp;
+	csp.setDepartureTime(departureTime);
+	csp.reset();
 	try {
-		if (path.size() < 3 || path.front() != 0 || path.back() != 0 || tail != 0) return false;
+		if (path.size() < 3 || path.front() != 0 || path.back() != 0 || tail != 0) return make_pair(false, Consumption_ESPPRC());
 		set<int> st(path.begin() + 1, path.end() - 1);
-		if (st.size() != path.size() - 2) return false;
+		if (st.size() != path.size() - 2) return make_pair(false, Consumption_ESPPRC());
 
-		Consumption_ESPPRC csp = consumption;
 		Cost_ESPPRC cst = cost;
-		csp.reset();
 		cst.reset();
 
 		auto pre = path.begin();
-		if (!csp.feasible(data, *pre)) return false;
+		if (!csp.feasible(data, *pre)) return make_pair(false, Consumption_ESPPRC());
 		for (auto suc = pre + 1; suc != path.end(); ++pre, ++suc) {
-			if (!data.ExistingArcs[*pre][*suc]) return false;
+			if (!data.ExistingArcs[*pre][*suc]) return make_pair(false, Consumption_ESPPRC());
 
 			csp.extend(data, *pre, *suc);
-			if (!csp.feasible(data, *suc)) return false;
+			if (!csp.feasible(data, *suc)) return make_pair(false, Consumption_ESPPRC());
 
 			cst.extend(data, *pre, *suc);
 		}
 
-		if (csp != consumption || cst != cost) return false;
+		if (cst != cost) return make_pair(false, Consumption_ESPPRC());
+	}
+	catch (const exception &exc) {
+		printErrorAndExit("getFeasibilityAndConsumption", exc);
+	}
+	return make_pair(true, csp);
+}
+
+
+// Check whether this label is a feasible solution.
+bool Label_ESPPRC::feasible(const Data_Input_ESPPRC &data) const {
+	try {
+		auto prBoolCsp = getFeasibilityAndConsumption(data, getDepartureTime());
+		if (!prBoolCsp.first || prBoolCsp.second != consumption) return false;
 	}
 	catch (const exception &exc) {
 		printErrorAndExit("Label_ESPPRC::feasible", exc);

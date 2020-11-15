@@ -156,10 +156,14 @@ public:
 	// Constructor.
 	Consumption_ESPPRC(const QuantityType quant, const DistanceType dist, const TimeType depTime) : 
 		quantity(quant), distance(dist), departureTime(depTime) { time = departureTime; }
+
+	void setDepartureTime(const TimeType depTime) { departureTime = depTime; }
+
 	QuantityType getQuantity() const { return quantity; }
 	DistanceType getDistance() const { return distance; }
 	TimeType getTime() const { return time; }
 	TimeType getDepartureTime() const { return departureTime; }
+	TimeType getDurationTime() const { return time - departureTime; }
 	// Reset this object.
 	void reset() { quantity = 0; distance = 0; time = departureTime; }
 	// Renew this object after extending from vertex i to vertex j.
@@ -224,6 +228,8 @@ public:
 	void renewUnreachable(const Data_Input_ESPPRC &data);
 	// Extend this lable to vertex j.
 	void extend(const Data_Input_ESPPRC &data, const int j);
+	// Get the feasibility and consumption.
+	pair<bool, Consumption_ESPPRC> getFeasibilityAndConsumption(const Data_Input_ESPPRC &data, const TimeType departureTime) const;
 	// Check whether this label is a feasible solution.
 	bool feasible(const Data_Input_ESPPRC &data) const;
 	// Output.

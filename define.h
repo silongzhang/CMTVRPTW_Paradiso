@@ -2,9 +2,10 @@
 
 #include"Header.h"
 
-constexpr auto Seven = 7;
 constexpr auto TwentyFour = 24;
 constexpr auto Ten = 10;
+constexpr auto Seven = 7;
+constexpr auto One = 1;
 constexpr auto DECI = 0.1;
 constexpr auto CENTI = 1e-2;
 constexpr auto MILLI = 1e-3;
