@@ -143,6 +143,7 @@ class Consumption_ESPPRC {
 	friend bool operator==(const Consumption_ESPPRC &lhs, const Consumption_ESPPRC &rhs);
 	friend bool operator!=(const Consumption_ESPPRC &lhs, const Consumption_ESPPRC &rhs);
 	friend bool operator<(const Consumption_ESPPRC &lhs, const Consumption_ESPPRC &rhs);
+
 private:
 	QuantityType quantity;
 	DistanceType distance;
@@ -173,6 +174,7 @@ class Cost_ESPPRC {
 	friend bool operator==(const Cost_ESPPRC &lhs, const Cost_ESPPRC &rhs);
 	friend bool operator!=(const Cost_ESPPRC &lhs, const Cost_ESPPRC &rhs);
 	friend bool operator<(const Cost_ESPPRC &lhs, const Cost_ESPPRC &rhs);
+
 private:
 	double realCost;
 	double reducedCost;
@@ -189,7 +191,7 @@ public:
 };
 
 class Label_ESPPRC {
-private:
+protected:
 	vector<int> path;
 	int tail;									// The last vertex in the path.
 	bitset<Max_Num_Vertex> unreachable;
