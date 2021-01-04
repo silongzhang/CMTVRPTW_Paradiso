@@ -23,6 +23,11 @@ void Time_Attribute::extend(const Data_Input_ESPPRC &data, const TimeType curren
 }
 
 
+bool Time_Attribute::dominate(const Time_Attribute& rhs) const {
+	return latestDeparture >= rhs.latestDeparture && earliestDeparture <= rhs.earliestDeparture && duration <= rhs.duration;
+}
+
+
 // Extend this lable to vertex j.
 void Label_TimePath::extend(const Data_Input_ESPPRC &data, const int j) {
 	try {
@@ -73,5 +78,11 @@ Label_TimePath::Label_TimePath(const Data_Input_ESPPRC &data, const int origin, 
 	catch (const exception &exc) {
 		printErrorAndExit("Label_TimePath::Label_TimePath", exc);
 	}
+}
+
+
+bool Label_TimePath::dominate(const Label_TimePath& rhs) const {
+	if (tail != rhs.tail || visited != rhs.visited) return false;
+	return getReducedCost() <= rhs.getReducedCost() && timeAttribute.dominate(rhs.getTimeAttribute());
 }
 

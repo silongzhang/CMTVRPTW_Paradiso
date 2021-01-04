@@ -10,7 +10,9 @@ private:
 	TimeType buffer;
 
 public:
+	// Default constructor.
 	Time_Attribute() {}
+	// Constructor.
 	Time_Attribute(const TimeType drt, const TimeType ed, const TimeType ld, const TimeType bff) : 
 		duration(drt), earliestDeparture(ed), latestDeparture(ld), buffer(bff) {}
 
@@ -23,6 +25,7 @@ public:
 	duration = 0; buffer = inputESPPRC.TimeWindow[0].second - inputESPPRC.TimeWindow[0].first; }
 	// Renew this object after extending from vertex i to vertex j.
 	void extend(const Data_Input_ESPPRC &data, const TimeType currentTime, const int i, const int j);
+	bool dominate(const Time_Attribute& rhs) const;
 };
 
 class Label_TimePath : public Label_ESPPRC {
@@ -44,6 +47,7 @@ public:
 	void extend(const Data_Input_ESPPRC &data, const int j);
 	// Check whether this label is a feasible route.
 	bool feasible(const Data_Input_ESPPRC &data) const;
+	bool dominate(const Label_TimePath& rhs) const;
 };
 
 
