@@ -10,10 +10,13 @@ class Solution_VRPTW_CG {
 private:
 	vector<pair<double, Route_VRPTW>> routes;
 	double cost;
+	Data_Input_ESPPRC input;
 public:
 	vector<pair<double, Route_VRPTW>> getRoutes() const { return routes; }
 	double getCost() const { return cost; }
+	Data_Input_ESPPRC getInput() const { return input; }
 	void reset() { routes.clear(); cost = 0; }
+	void setInput(const Data_Input_ESPPRC& rhs) { input = rhs; }
 	void addRoute(const double weight, const Route_VRPTW &rhs) { routes.push_back(make_pair(weight, rhs)); cost += weight * rhs.getRealCost(); }
 	void print(ostream &output) const;
 };

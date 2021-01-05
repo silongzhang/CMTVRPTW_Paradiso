@@ -121,6 +121,7 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 	const Parameter_VRPTW_CG &prm, ostream &output) {
 	IloEnv env;
 	Solution_VRPTW_CG sol;
+	Data_Input_ESPPRC input;
 	try {
 		string strLog = "Begin running the procedure titled VRPTW_CG::columnGeneration.";
 		print(prm.allowPrintLog, output, strLog);
@@ -159,7 +160,7 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 			dualValue[0] = 0;
 
 			// Set reduced cost.
-			Data_Input_ESPPRC input(inputESPPRC);
+			input = inputESPPRC;
 			for (int i = 0; i < inputESPPRC.NumVertices; ++i) {
 				for (int j = 0; j < inputESPPRC.NumVertices; ++j) {
 					input.ReducedCost[i][j] = input.RealCost[i][j] - (dualValue[i] + dualValue[j]) / 2;
@@ -209,6 +210,7 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 		printErrorAndExit("VRPTW_CG::columnGeneration", exc);
 	}
 	env.end();
+	sol.setInput(input);
 	return sol;
 }
 
