@@ -1,9 +1,10 @@
 #include"Header.h"
 #include"VRPTW.h"
+#include"Enumeration_TimePath.h"
 
 
 int main(int argc, char** argv) {
-	testVRPTWCG();
+	testUntilStructureEnumeration();
 
 	return 0;
 }

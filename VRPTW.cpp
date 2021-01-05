@@ -324,7 +324,7 @@ vector<Route_VRPTW> generateInitialRoutes(const Data_Input_ESPPRC &inputESPPRC) 
 
 
 // Get the value of a lower bound at the root node of BP tree.
-double lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW) {
+Solution_VRPTW_CG lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW) {
 	Solution_VRPTW_CG sol;
 	try {
 		// Set parameters of Data_Input_ESPPRC.
@@ -346,7 +346,7 @@ double lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW) {
 	catch (const exception &exc) {
 		printErrorAndExit("lbAtCGRootNodeVRPTW", exc);
 	}
-	return sol.getCost();
+	return sol;
 }
 
 
@@ -355,7 +355,7 @@ void testVRPTWCG() {
 		Data_Input_VRPTW inputVRPTW;
 		inputVRPTW.constrainResource = { true,false,true };
 
-		string outFile = "data//CMTVRPTW//Test//2020.11.14.TestVRPTWCG.txt";
+		string outFile = "data//CMTVRPTW//Test//testVRPTWCG.txt";
 		ofstream os(outFile);
 		if (!os) throw exception();
 		os << "Name" << '\t' << "NumVertices" << '\t' << "Capacity" << '\t' << "Density" << '\t' << "Lower bound" << '\t' << "Running Time (s)" << endl;
@@ -377,7 +377,7 @@ void testVRPTWCG() {
 
 				clock_t last = clock();
 				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t'
-					<< inputVRPTW.density << '\t' << lbAtCGRootNodeVRPTW(inputVRPTW) << '\t';
+					<< inputVRPTW.density << '\t' << lbAtCGRootNodeVRPTW(inputVRPTW).getCost() << '\t';
 				os << runTime(last) << endl;
 				cout << endl << endl << endl;
 			}

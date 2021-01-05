@@ -163,15 +163,20 @@ Map_Label_TimePath EnumerationStructure(const Data_Input_ESPPRC& input, double m
 		// Initiate.
 		int current = 0, next = 1;
 		vector<vector<Map_Label_TimePath>> structures(2, vector<Map_Label_TimePath>(input.NumVertices, Map_Label_TimePath()));
-		long long numStructuresNext = initiateForEnumerationStructure(input, structures);
-		long long numTotal = numStructuresNext, numPrunedBounds = 0, numPrunedDominance = 0;
+		long long numNext = initiateForEnumerationStructure(input, structures);
+		long long numTotal = numNext, numPrunedBounds = 0, numPrunedDominance = 0, numExtended = 0;
 
 		// Label setting algorithm.
-		while (numStructuresNext > 0) {
-			cout << "numTotal: " << numTotal << '\t' << "numStructuresNext: " << numStructuresNext << endl;
-			cout << "numPrunedBounds: " << numPrunedBounds << '\t' << "numPrunedDominance: " << numPrunedDominance << endl;
+		while (numNext > 0) {
 			std::swap(current, next);
-			for (auto& elem : structures[next]) elem.reset();
+			for (auto& elem : structures[next]) {
+				numExtended += elem.getSize();
+				elem.reset();
+			}
+
+			cout << "numTotal: " << numTotal << '\t' << "numNext: " << numNext << '\t' << "numCompleted: " << result.getSize() << endl;
+			cout << "numPrunedBounds: " << numPrunedBounds << '\t' << "numPrunedDominance: " << numPrunedDominance << '\t' 
+				<< "numExtended: " << numExtended << endl;
 
 			for (int i = 1; i < input.NumVertices; ++i) {
 				for (const auto& pairVisitedList : structures[current][i].getMpVisitedLabels()) {
@@ -200,15 +205,71 @@ Map_Label_TimePath EnumerationStructure(const Data_Input_ESPPRC& input, double m
 				}
 			}
 
-			numStructuresNext = 0;
+			numNext = 0;
 			for (const auto& elem : structures[next])
-				numStructuresNext += elem.getSize();
+				numNext += elem.getSize();
 		}
+
+		for (const auto& elem : structures[current])
+			numExtended += elem.getSize();
+
+		cout << "numTotal: " << numTotal << '\t' << "numNext: " << numNext << '\t' << "numCompleted: " << result.getSize() << endl;
+		cout << "numPrunedBounds: " << numPrunedBounds << '\t' << "numPrunedDominance: " << numPrunedDominance << '\t'
+			<< "numExtended: " << numExtended << endl;
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("EnumerationStructure", exc);
 	}
 	return result;
+}
+
+
+void testUntilStructureEnumeration() {
+	try {
+		Data_Input_VRPTW inputVRPTW;
+		inputVRPTW.constrainResource = { true,false,true };
+
+		string outFile = "data//CMTVRPTW//Test//testUntilStructureEnumeration.txt";
+		ofstream os(outFile);
+		if (!os) throw exception();
+		os << "Name" << '\t' << "NumVertices" << '\t' << "Capacity" << '\t' << "Density" << '\t' << "Lower bound" << '\t' << "Running Time (s)" << '\t'
+			<< "NumStructures" << '\t' << "Running Time (s)" << endl;
+
+		vector<string> folders = { "data//CMTVRPTW//Solomon Type 2 - 25//",
+			"data//CMTVRPTW//Solomon Type 2 - 40//",
+			"data//CMTVRPTW//Solomon Type 2 - 50//" };
+		vector<string> names;
+		getFiles(folders[0], vector<string>(), names);
+
+		clock_t start = clock();
+		for (const auto& folder : folders) {
+			for (const auto& name : names) {
+				string strInput = folder + name;
+				readFromFileVRPTW(inputVRPTW, strInput);
+				inputVRPTW.preprocess();
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << '\t' << "Time: " << runTime(start) << endl;
+
+				clock_t last = clock();
+				Solution_VRPTW_CG solForVRPTWCG = lbAtCGRootNodeVRPTW(inputVRPTW);
+				double timeForVRPTWCG = runTime(last);
+
+				last = clock();
+				double gapGuess = 0.05;
+				Map_Label_TimePath resultForEnumeration = EnumerationStructure(solForVRPTWCG.getInput(), solForVRPTWCG.getCost() * gapGuess);
+				double timeForEnumeration = runTime(last);
+
+				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t' << inputVRPTW.density << '\t' 
+					<< solForVRPTWCG.getCost() << '\t' << timeForVRPTWCG << '\t' << resultForEnumeration.getSize() << '\t' << timeForEnumeration << endl;
+			}
+		}
+		os.close();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("testVRPTWCG", exc);
+	}
 }
 
 

@@ -71,4 +71,5 @@ public:
 long long initiateForEnumerationStructure(const Data_Input_ESPPRC& input, vector<vector<Map_Label_TimePath>>& structures);
 Map_Label_TimePath EnumerationStructure(const Data_Input_ESPPRC& input, double maxRC);
 
+void testUntilStructureEnumeration();
 
