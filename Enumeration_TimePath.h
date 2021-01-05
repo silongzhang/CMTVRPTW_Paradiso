@@ -50,4 +50,25 @@ public:
 	bool dominate(const Label_TimePath& rhs) const;
 };
 
+class Map_Label_TimePath {
+private:
+	int tail;
+	long long size;
+	unordered_map<bitset<Max_Num_Vertex>, list<Label_TimePath>> mpVisitedLabels;
+
+public:
+	// Default constructor.
+	Map_Label_TimePath() :size(0) {}
+	// Constructor.
+	Map_Label_TimePath(int vertex) : tail(vertex), size(0) { mpVisitedLabels.clear(); }
+	void reset() { size = 0; mpVisitedLabels.clear(); }
+	// Try to insert a Label_TimePath object. Return the change of the size.
+	long long tryInsert(const Label_TimePath& rhs);
+	long long getSize() const { return size; }
+	unordered_map<bitset<Max_Num_Vertex>, list<Label_TimePath>> getMpVisitedLabels() const { return mpVisitedLabels; }
+};
+
+long long initiateForEnumerationStructure(const Data_Input_ESPPRC& input, vector<vector<Map_Label_TimePath>>& structures);
+Map_Label_TimePath EnumerationStructure(const Data_Input_ESPPRC& input, double maxRC);
+
 

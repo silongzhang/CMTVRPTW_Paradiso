@@ -86,3 +86,129 @@ bool Label_TimePath::dominate(const Label_TimePath& rhs) const {
 	return getReducedCost() <= rhs.getReducedCost() && timeAttribute.dominate(rhs.getTimeAttribute());
 }
 
+
+// Try to insert a Label_TimePath object. Return the change of the size.
+long long Map_Label_TimePath::tryInsert(const Label_TimePath& rhs) {
+	long long originSize = size;
+	try {
+		if (rhs.getTail() != tail) throw exception();
+
+		auto posPair = mpVisitedLabels.find(rhs.getVisited());
+		if (posPair == mpVisitedLabels.end()) {
+			mpVisitedLabels.insert(make_pair(rhs.getVisited(), list<Label_TimePath>{rhs}));
+			++size;
+		}
+		else {
+			auto posList = posPair->second.begin();
+			while (posList != posPair->second.end()) {
+				if (posList->dominate(rhs))
+					break;
+				else if (rhs.dominate(*posList)) {
+					auto temp = posList;
+					++posList;
+					posPair->second.erase(temp);
+					--size;
+				}
+				else
+					++posList;
+			}
+			if (posList == posPair->second.end()) {
+				posPair->second.push_front(rhs);
+				++size;
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("Map_Label_TimePath::tryInsert", exc);
+	}
+	return size - originSize;
+}
+
+
+long long initiateForEnumerationStructure(const Data_Input_ESPPRC& input, vector<vector<Map_Label_TimePath>>& structures) {
+	long long numStructuresNext = 0;
+	try {
+		// Define the initial Label_TimePath.
+		Consumption_ESPPRC csp(0, 0, input.TimeWindow[0].first);
+		Cost_ESPPRC cst;
+		cst.reset();
+		Label_TimePath initialLable(input, 0, csp, cst);
+		if (initialLable.getUnreachable().test(0)) throw exception();
+
+		int current = 0, next = 1;
+		for (int i = 1; i < input.NumVertices; ++i) {
+			structures[current][i] = Map_Label_TimePath(i);
+			structures[next][i] = Map_Label_TimePath(i);
+			if (initialLable.canExtend(input, i)) {
+				Label_TimePath childLabel(initialLable);
+				childLabel.extend(input, i);
+				numStructuresNext += structures[next][i].tryInsert(childLabel);
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("initiateForEnumerationStructure", exc);
+	}
+	return numStructuresNext;
+}
+
+
+Map_Label_TimePath EnumerationStructure(const Data_Input_ESPPRC& input, double maxRC) {
+	Map_Label_TimePath result(0);
+	try {
+		// Compute the completion bounds.
+		Data_Auxiliary_ESPPRC auxiliary;
+		lbBasedOnAllResources(input, auxiliary);
+
+		// Initiate.
+		int current = 0, next = 1;
+		vector<vector<Map_Label_TimePath>> structures(2, vector<Map_Label_TimePath>(input.NumVertices, Map_Label_TimePath()));
+		long long numStructuresNext = initiateForEnumerationStructure(input, structures);
+		long long numTotal = numStructuresNext, numPrunedBounds = 0, numPrunedDominance = 0;
+
+		// Label setting algorithm.
+		while (numStructuresNext > 0) {
+			cout << "numTotal: " << numTotal << '\t' << "numStructuresNext: " << numStructuresNext << endl;
+			cout << "numPrunedBounds: " << numPrunedBounds << '\t' << "numPrunedDominance: " << numPrunedDominance << endl;
+			std::swap(current, next);
+			for (auto& elem : structures[next]) elem.reset();
+
+			for (int i = 1; i < input.NumVertices; ++i) {
+				for (const auto& pairVisitedList : structures[current][i].getMpVisitedLabels()) {
+					for (const auto& parentLabel : pairVisitedList.second) {
+						if (!parentLabel.canExtend(input, 0)) throw exception();
+						Label_TimePath completedLabel(parentLabel);
+						completedLabel.extend(input, 0);
+						++numTotal;
+						numPrunedDominance += 1 - result.tryInsert(completedLabel);
+
+						for (int j = 1; j < input.NumVertices; ++j) {
+							if (parentLabel.canExtend(input, j)) {
+								Label_TimePath childLabel(parentLabel);
+								childLabel.extend(input, j);
+								++numTotal;
+
+								if (greaterThanReal(lbOfALabelInDPAlgorithmESPPRC(input, auxiliary, childLabel), maxRC, PPM)) {
+									++numPrunedBounds;
+								}
+								else {
+									numPrunedDominance += 1 - structures[next][j].tryInsert(childLabel);
+								}
+							}
+						}
+					}
+				}
+			}
+
+			numStructuresNext = 0;
+			for (const auto& elem : structures[next])
+				numStructuresNext += elem.getSize();
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("EnumerationStructure", exc);
+	}
+	return result;
+}
+
+
