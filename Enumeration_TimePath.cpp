@@ -39,6 +39,32 @@ bool Label_TimePath::atLeastTwo(const tuple<int, int, int>& tp) const {
 }
 
 
+vector<tuple<int, int, int>> Label_TimePath::getTuples(int begin, int end) const {
+	vector<tuple<int, int, int>> result;
+	try {
+		vector<int> potential;
+		for (int i = begin; i < end; ++i) {
+			if (visited.test(i)) {
+				potential.push_back(i);
+			}
+		}
+		if (potential.size() >= 3) {
+			for (int i = 0; i < potential.size(); ++i) {
+				for (int j = i + 1; j < potential.size(); ++j) {
+					for (int k = j + 1; k < potential.size(); ++k) {
+						result.push_back(make_tuple(potential[i], potential[j], potential[k]));
+					}
+				}
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("Label_TimePath::getTuples", exc);
+	}
+	return result;
+}
+
+
 // Extend this lable to vertex j.
 void Label_TimePath::extend(const Data_Input_ESPPRC &data, const int j) {
 	try {

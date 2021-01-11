@@ -45,6 +45,7 @@ public:
 	bool atLeastTwo(const tuple<int, int, int>& tp) const;
 	Time_Attribute getTimeAttribute() const { return timeAttribute; }
 	TimeType getDepartureTime() const = delete;
+	vector<tuple<int, int, int>> getTuples(int begin, int end) const;
 
 	// Extend this lable to vertex j.
 	void extend(const Data_Input_ESPPRC &data, const int j);
