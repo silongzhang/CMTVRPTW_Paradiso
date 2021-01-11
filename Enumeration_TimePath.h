@@ -42,6 +42,7 @@ public:
 	bitset<Max_Num_Vertex> getVisited() const { return visited; }
 	bool hasVisited(const int i) const { return visited.test(i); }
 	bool strongActive(const double t) const;
+	bool atLeastTwo(const tuple<int, int, int>& tp) const;
 	Time_Attribute getTimeAttribute() const { return timeAttribute; }
 	TimeType getDepartureTime() const = delete;
 

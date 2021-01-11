@@ -34,6 +34,11 @@ bool Label_TimePath::strongActive(const double t) const {
 }
 
 
+bool Label_TimePath::atLeastTwo(const tuple<int, int, int>& tp) const {
+	return int(visited.test(get<0>(tp))) + int(visited.test(get<1>(tp))) + int(visited.test(get<2>(tp))) >= 2;
+}
+
+
 // Extend this lable to vertex j.
 void Label_TimePath::extend(const Data_Input_ESPPRC &data, const int j) {
 	try {
