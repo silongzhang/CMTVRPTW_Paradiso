@@ -16,6 +16,7 @@
     <ClCompile Include="ESPPRC.cpp" />
     <ClCompile Include="general.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="RSFC.cpp" />
     <ClCompile Include="VRPTW.cpp" />
     <ClCompile Include="VRPTW_CG.cpp" />
   </ItemGroup>
@@ -25,6 +26,7 @@
     <ClInclude Include="ESPPRC.h" />
     <ClInclude Include="general.h" />
     <ClInclude Include="Header.h" />
+    <ClInclude Include="RSFC.h" />
     <ClInclude Include="VRPTW.h" />
     <ClInclude Include="VRPTW_CG.h" />
   </ItemGroup>

@@ -28,6 +28,12 @@ bool Time_Attribute::dominate(const Time_Attribute& rhs) const {
 }
 
 
+bool Label_TimePath::strongActive(const double t) const {
+	return lessThanReal(timeAttribute.getLatestDeparture() - 2 * PPM, t, PPM) &&
+		lessThanReal(t, timeAttribute.getEarliestDeparture() + timeAttribute.getDuration(), PPM);
+}
+
+
 // Extend this lable to vertex j.
 void Label_TimePath::extend(const Data_Input_ESPPRC &data, const int j) {
 	try {

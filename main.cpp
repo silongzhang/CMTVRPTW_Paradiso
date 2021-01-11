@@ -4,9 +4,7 @@
 
 
 int main(int argc, char** argv) {
-	testUntilStructureEnumeration();
 
 	return 0;
 }
-
 
