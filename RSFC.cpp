@@ -18,6 +18,16 @@ vector<Label_TimePath> linearize(const Map_Label_TimePath& structures) {
 }
 
 
+vector<double> linearize(const set<double, timeSortCriterion>& tms) {
+	return vector<double>(tms.begin(), tms.end());
+}
+
+
+vector<tuple<int, int, int>> linearize(const set<tuple<int, int, int>>& tps) {
+	return vector<tuple<int, int, int>>(tps.begin(), tps.end());
+}
+
+
 void setObjective(const vector<Label_TimePath>& structures, IloModel model, IloNumVarArray x) {
 	try {
 		auto env = model.getEnv();
@@ -55,7 +65,7 @@ void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_T
 
 
 void addConstraintsActive(const Data_Input_VRPTW& input, const vector<Label_TimePath>& structures, IloModel model, IloNumVarArray x, 
-	const set<double, timeSortCriterion>& additionalTimes) {
+	const vector<double>& additionalTimes) {
 	try {
 		auto env = model.getEnv();
 		for (const auto t : additionalTimes) {
@@ -76,7 +86,7 @@ void addConstraintsActive(const Data_Input_VRPTW& input, const vector<Label_Time
 
 
 void addConstraintsSR(const Data_Input_VRPTW& input, const vector<Label_TimePath>& structures, IloModel model, IloNumVarArray x,
-	const set<tuple<int, int, int>>& additionalTriplets) {
+	const vector<tuple<int, int, int>>& additionalTriplets) {
 	try {
 		auto env = model.getEnv();
 		for (const auto& triplet : additionalTriplets) {
@@ -177,25 +187,46 @@ set<tuple<int, int, int>> detectAdditionalTriplets(const Data_Input_VRPTW& input
 void RSFC(outputRSFC& output, const Data_Input_VRPTW& input, const Map_Label_TimePath& stt) {
 	IloEnv env;
 	try {
-		set<double, timeSortCriterion> times;
-		set<tuple<int, int, int>> triplets;
-
-		vector<Label_TimePath> structures = linearize(stt);
-		const long long NumStructures = structures.size();
+		output.structures = linearize(stt);
 
 		// Define the variables.
-		IloNumVarArray x(env, NumStructures, 0, IloInfinity);
+		IloNumVarArray x(env, output.structures.size(), 0, IloInfinity);
 
 		// Define the model.
 		IloModel model(env);
-		setObjective(structures, model, x);
-		setConstraintsPartition(input, structures, model, x);
+		setObjective(output.structures, model, x);
+		setConstraintsPartition(input, output.structures, model, x);
+
+		set<double, timeSortCriterion> times;
+		set<tuple<int, int, int>> triplets;
 
 		// Solve the model.
 		IloCplex cplex(model);
-		while (true) {
+		for (int i = 1; true; ++i) {
+			env.out() << "solve the RSFC model for the " << i << "th time." << endl;
 			cplex.solve();
+			auto additionalTimes = detectAdditionalTimes(input, output.structures, times, cplex, x);
+			for (const auto& elem : additionalTimes) times.insert(elem);
+			auto additionalTriplets = detectAdditionalTriplets(input, output.structures, triplets, cplex, x);
+			for (const auto& elem : additionalTriplets) triplets.insert(elem);
+			
+			if (additionalTimes.empty() && additionalTriplets.empty()) {
+				env.out() << "No additional time slots or triplets should be added into the RSFC model." << endl;
+				break;
+			}
+			else {
+				addConstraintsActive(input, output.structures, model, x, linearize(additionalTimes));
+				env.out() << "The number of added time slots (additional / total): " << additionalTimes.size() << " / " << times.size() << endl;
+				addConstraintsSR(input, output.structures, model, x, linearize(additionalTriplets));
+				env.out() << "The number of added triplets (additional / total): " << additionalTriplets.size() << " / " << triplets.size() << endl;
+			}
 		}
+
+		env.out() << "solution status is " << cplex.getStatus() << endl;
+		env.out() << "solution value  is " << cplex.getObjValue() << endl;
+		output.objective = cplex.getObjValue();
+
+
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("RSFC", exc);
