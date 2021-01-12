@@ -55,8 +55,8 @@ void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_T
 					expr += x[s];
 				}
 			}
-			model.add(expr == 1);
 			rangePartition.add(expr == 1);
+			model.add(rangePartition[rangePartition.getSize() - 1]);
 			expr.end();
 		}
 	}
@@ -77,8 +77,8 @@ void addConstraintsActive(outputRSFC& output, const Data_Input_VRPTW& input, con
 					expr += x[s];
 				}
 			}
-			model.add(expr <= input.MaxNumVehicles);
 			rangeActive.add(expr <= input.MaxNumVehicles);
+			model.add(rangeActive[rangeActive.getSize() - 1]);
 			output.times.push_back(t);
 			expr.end();
 		}
@@ -100,8 +100,8 @@ void addConstraintsSR(outputRSFC& output, const Data_Input_VRPTW& input, const v
 					expr += x[s];
 				}
 			}
-			model.add(expr <= 1);
 			rangeSR.add(expr <= 1);
+			model.add(rangeSR[rangeSR.getSize() - 1]);
 			output.triplets.push_back(triplet);
 			expr.end();
 		}
