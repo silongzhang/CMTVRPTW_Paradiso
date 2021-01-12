@@ -237,18 +237,38 @@ void RSFC(outputRSFC& output, const Data_Input_VRPTW& input, const Map_Label_Tim
 		output.dualPartition.clear(); output.dualActive.clear(); output.dualSR.clear();
 		IloNumArray dual(env);
 		cplex.getDuals(dual, rangePartition);
+		output.dualPartition.push_back(0);
 		for (int i = 0; i < dual.getSize(); ++i) output.dualPartition.push_back(dual[i]);
 
 		cplex.getDuals(dual, rangeActive);
 		for (int i = 0; i < dual.getSize(); ++i) output.dualActive.push_back(dual[i]);
 
 		cplex.getDuals(dual, rangeSR);
-		for (int i = 0; i < dual.getSize(); ++i) output.dualSR.push_back(dual[i]);
+		for (int i = 0; i < dual.getSize(); ++i) {
+			output.dualSR.push_back(dual[i]);
+			output.mapDualSR.insert(make_pair(output.triplets[i], dual[i]));
+		}
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("RSFC", exc);
 	}
 	env.end();
+}
+
+
+vector<Label_TimePath> StructureReduction(const Data_Input_VRPTW& input, const outputRSFC& rsfc, const double reducedCostGap) {
+	vector<Label_TimePath> result;
+	try {
+		for (const auto& elem : rsfc.structures) {
+			if (!greaterThanReal(elem.getReducedCostRSFC(input, rsfc), reducedCostGap, PPM)) {
+				result.push_back(elem);
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("StructureReduction", exc);
+	}
+	return result;
 }
 
 

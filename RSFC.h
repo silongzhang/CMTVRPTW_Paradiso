@@ -9,18 +9,6 @@ public:
 	}
 };
 
-class outputRSFC {
-public:
-	vector<Label_TimePath> structures;
-	vector<double> times;
-	vector<tuple<int, int, int>> triplets;
-
-	double objective;
-	vector<double> dualPartition;
-	vector<double> dualActive;
-	vector<double> dualSR;
-};
-
 vector<Label_TimePath> linearize(const Map_Label_TimePath& structures);
 vector<double> linearize(const set<double, timeSortCriterion>& tms);
 vector<tuple<int, int, int>> linearize(const set<tuple<int, int, int>>& tps);
@@ -37,4 +25,5 @@ set<double, timeSortCriterion> detectAdditionalTimes(const Data_Input_VRPTW& inp
 set<tuple<int, int, int>> detectAdditionalTriplets(const Data_Input_VRPTW& input, const vector<Label_TimePath>& structures,
 	const set<tuple<int, int, int>>& triplets, const IloCplex& cplex, const IloNumVarArray& x);
 void RSFC(outputRSFC& output, const Data_Input_VRPTW& input, const Map_Label_TimePath& stt);
+vector<Label_TimePath> StructureReduction(const Data_Input_VRPTW& input, const outputRSFC& rsfc, const double reducedCostGap);
 

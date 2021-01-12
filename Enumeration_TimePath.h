@@ -2,6 +2,8 @@
 
 #include"VRPTW.h"
 
+class Label_TimePath;
+
 class Time_Attribute {
 private:
 	TimeType duration;
@@ -28,6 +30,19 @@ public:
 	bool dominate(const Time_Attribute& rhs) const;
 };
 
+class outputRSFC {
+public:
+	vector<Label_TimePath> structures;
+	vector<double> times;
+	vector<tuple<int, int, int>> triplets;
+
+	double objective;
+	vector<double> dualPartition;
+	vector<double> dualActive;
+	vector<double> dualSR;
+	map<tuple<int, int, int>, double> mapDualSR;
+};
+
 class Label_TimePath : public Label_ESPPRC {
 private:
 	bitset<Max_Num_Vertex> visited;
@@ -46,6 +61,7 @@ public:
 	Time_Attribute getTimeAttribute() const { return timeAttribute; }
 	TimeType getDepartureTime() const = delete;
 	vector<tuple<int, int, int>> getTuples(int begin, int end) const;
+	double getReducedCostRSFC(const Data_Input_VRPTW& input, const outputRSFC& rsfc) const;
 
 	// Extend this lable to vertex j.
 	void extend(const Data_Input_ESPPRC &data, const int j);

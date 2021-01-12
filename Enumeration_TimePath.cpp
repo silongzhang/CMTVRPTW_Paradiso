@@ -65,6 +65,35 @@ vector<tuple<int, int, int>> Label_TimePath::getTuples(int begin, int end) const
 }
 
 
+double Label_TimePath::getReducedCostRSFC(const Data_Input_VRPTW& input, const outputRSFC& rsfc) const {
+	double result = cost.getRealCost();
+	try {
+		for (int i = 1; i < input.NumVertices; ++i) {
+			if (visited.test(i)) {
+				result -= rsfc.dualPartition[i];
+			}
+		}
+
+		for (int i = 0; i < rsfc.times.size(); ++i) {
+			if (strongActive(rsfc.times[i])) {
+				result -= rsfc.dualActive[i];
+			}
+		}
+
+		for (const auto& tp : getTuples(1, input.NumVertices)) {
+			auto pos = rsfc.mapDualSR.find(tp);
+			if (pos != rsfc.mapDualSR.end()) {
+				result -= pos->second;
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("Label_TimePath::getReducedCostRSFC", exc);
+	}
+	return result;
+}
+
+
 // Extend this lable to vertex j.
 void Label_TimePath::extend(const Data_Input_ESPPRC &data, const int j) {
 	try {
