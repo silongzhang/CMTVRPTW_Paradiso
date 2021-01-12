@@ -26,4 +26,5 @@ set<tuple<int, int, int>> detectAdditionalTriplets(const Data_Input_VRPTW& input
 	const set<tuple<int, int, int>>& triplets, const IloCplex& cplex, const IloNumVarArray& x);
 void RSFC(outputRSFC& output, const Data_Input_VRPTW& input, const Map_Label_TimePath& stt);
 vector<Label_TimePath> StructureReduction(const Data_Input_VRPTW& input, const outputRSFC& rsfc, const double reducedCostGap);
+void testUntilStructureReduction();
 

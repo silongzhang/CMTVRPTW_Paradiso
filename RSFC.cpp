@@ -272,3 +272,65 @@ vector<Label_TimePath> StructureReduction(const Data_Input_VRPTW& input, const o
 }
 
 
+void testUntilStructureReduction() {
+	try {
+		Data_Input_VRPTW inputVRPTW;
+		inputVRPTW.constrainResource = { true,false,true };
+
+		string outFile = "data//CMTVRPTW//Test//testUntilStructureReduction.txt";
+		ofstream os(outFile);
+		if (!os) throw exception();
+		os << "Name" << '\t' << "NumVertices" << '\t' << "Capacity" << '\t' << "Density" << '\t'
+			<< "Lower bound (VRPTW)" << '\t' << "Running Time (s)" << '\t' << "NumStructures" << '\t' << "Running Time (s)" << '\t'
+			<< "Lower bound (RSFC)" << '\t' << "Running Time (s)" << '\t' << "NumStructures" << '\t' << "Running Time (s)" << endl;
+
+		vector<string> folders = { "data//CMTVRPTW//Solomon Type 2 - 25//",
+			"data//CMTVRPTW//Solomon Type 2 - 40//",
+			"data//CMTVRPTW//Solomon Type 2 - 50//" };
+		vector<string> names;
+		getFiles(folders[0], vector<string>(), names);
+
+		clock_t last = clock();
+		for (const auto& folder : folders) {
+			for (const auto& name : names) {
+				string strInput = folder + name;
+				readFromFileVRPTW(inputVRPTW, strInput);
+				inputVRPTW.preprocess();
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << '\t' << "Time: " << runTime(last) << endl;
+				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t' << inputVRPTW.density << '\t';
+
+				last = clock();
+				Solution_VRPTW_CG solForVRPTWCG = lbAtCGRootNodeVRPTW(inputVRPTW);
+				double timeForVRPTWCG = runTime(last);
+				os << solForVRPTWCG.getCost() << '\t' << timeForVRPTWCG << '\t';
+
+				last = clock();
+				double gapGuess = 0.05;
+				double ubGuess = solForVRPTWCG.getCost() * (1 + gapGuess);
+				Map_Label_TimePath resultForEnumeration = EnumerationStructure(solForVRPTWCG.getInput(), ubGuess - solForVRPTWCG.getCost());
+				double timeForEnumeration = runTime(last);
+				os << resultForEnumeration.getSize() << '\t' << timeForEnumeration << '\t';
+
+				last = clock();
+				outputRSFC rsfc;
+				RSFC(rsfc, inputVRPTW, resultForEnumeration);
+				double timeForRSFC = runTime(last);
+				os << rsfc.objective << '\t' << timeForRSFC << '\t';
+
+				last = clock();
+				vector<Label_TimePath> structuresReduced = StructureReduction(inputVRPTW, rsfc, ubGuess - rsfc.objective);
+				double timeForStructureReduction = runTime(last);
+				os << structuresReduced.size() << '\t' << timeForStructureReduction << endl;
+			}
+		}
+		os.close();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("testVRPTWCG", exc);
+	}
+}
+
+
