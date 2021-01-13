@@ -293,6 +293,9 @@ void testUntilStructureReduction() {
 		clock_t last = clock();
 		for (const auto& folder : folders) {
 			for (const auto& name : names) {
+				if (folder == "data//CMTVRPTW//Solomon Type 2 - 50//" && name[0] == 'R' && name[1] == '2') {
+					continue;
+				}
 				string strInput = folder + name;
 				readFromFileVRPTW(inputVRPTW, strInput);
 				inputVRPTW.preprocess();
