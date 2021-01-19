@@ -44,7 +44,28 @@ void TOPTW_CG::InitiateRMP(const Parameter_TOPTW_CG& parameter, IloObjective& ob
 }
 
 
-void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TOPTW_CG& solution, ostream& output) {
+void renewReducedCost(Data_Input_ESPPRC& inputESPPRC, const Parameter_TOPTW_CG& parameter, const IloNumArray& dualValue) {
+	try {
+		for (int i = 0; i < parameter.inputESPPRC.NumVertices; ++i) {
+			double dualI = i == 0 ? 0 : dualValue[i];
+			for (int j = 0; j < parameter.inputESPPRC.NumVertices; ++j) {
+				if (i == j) {
+					inputESPPRC.ReducedCost[i][j] = 0;
+				}
+				else {
+					double dualJ = j == 0 ? 0 : dualValue[j];
+					inputESPPRC.ReducedCost[i][j] = (dualI + dualJ) / 2 - inputESPPRC.RealCost[i][j];
+				}
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("renewReducedCost", exc);
+	}
+}
+
+
+void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, ostream& output) {
 	IloEnv env;
 	try {
 		string strLog = "Begin running the procedure titled TOPTW_CG::columnGeneration.";
@@ -65,8 +86,51 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 		// Define the variables of restricted master problem.
 		IloNumVarArray X(env);
 
+		// Initiate the model of restricted master problem.
+		InitiateRMP(parameter, objectiveRMP, constraintRMP, X);
 
+		// Define the solver of restricted master problem.
+		IloCplex solverRMP(modelRMP);
 
+		Data_Input_ESPPRC inputESPPRC = parameter.inputESPPRC;
+		for (int iter = 1; true; ++iter) {
+			// Solve the RMP.
+			strLog = "\nSolve the master problem for the " + numToStr(iter) + "th time.";
+			print(parameter.allowPrintLog, output, strLog);
+			solveModel(solverRMP);
+
+			// Get dual values.
+			IloNumArray dualValue(env);
+			solverRMP.getDuals(dualValue, constraintRMP);
+
+			// Renew reduced cost.
+			renewReducedCost(inputESPPRC, parameter, dualValue);
+
+			// Solve the subproblem.
+			Data_Auxiliary_ESPPRC auxiliary;
+			inputESPPRC.mustOptimal = false;
+			inputESPPRC.minRunTime = 0;
+			auto resultSP = DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
+
+			// Stopping criterion.
+			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, 0)) {
+				inputESPPRC.mustOptimal = true;
+				resultSP = DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
+				if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, 0)) break;
+			}
+
+			// Add new columns.
+			for (const auto& elem : resultSP) {
+				addColumn(elem, objectiveRMP, constraintRMP, X);
+			}
+			strLog = numToStr(resultSP.size()) + " routes are added." + '\t' +
+				"The minimum reduced cost of added routes: " + numToStr(resultSP.begin()->getReducedCost());
+			print(parameter.allowPrintLog, output, strLog);
+		}
+
+		// Check whether the optimal solution of this node is integral or linear, then get other information about this optimal solution.
+
+		// If the optimal solution is linear, then get two child nodes by branching.
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("TOPTW_CG::columnGeneration", exc);
