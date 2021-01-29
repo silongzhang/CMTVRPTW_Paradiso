@@ -31,10 +31,10 @@ void TOPTW_CG::addColumn(const Route_VRPTW& rhs, IloObjective& objectiveRMP, Ilo
 }
 
 
-void TOPTW_CG::InitiateRMP(const Parameter_TOPTW_CG& parameter, IloObjective& objectiveRMP, IloRangeArray& constraintRMP, IloNumVarArray& X) {
+void TOPTW_CG::InitiateRMP(const vector<Route_VRPTW>& initialRoutes, IloObjective& objectiveRMP, IloRangeArray& constraintRMP, IloNumVarArray& X) {
 	try {
 		clearColumns();
-		for (const auto& rhs : parameter.initialRoutes) {
+		for (const auto& rhs : initialRoutes) {
 			addColumn(rhs, objectiveRMP, constraintRMP, X);
 		}
 	}
@@ -46,9 +46,9 @@ void TOPTW_CG::InitiateRMP(const Parameter_TOPTW_CG& parameter, IloObjective& ob
 
 void renewReducedCost(Data_Input_ESPPRC& inputESPPRC, const Parameter_TOPTW_CG& parameter, const IloNumArray& dualValue) {
 	try {
-		for (int i = 0; i < parameter.inputESPPRC.NumVertices; ++i) {
+		for (int i = 0; i < parameter.input_VRPTW.NumVertices; ++i) {
 			double dualI = i == 0 ? 0 : dualValue[i];
-			for (int j = 0; j < parameter.inputESPPRC.NumVertices; ++j) {
+			for (int j = 0; j < parameter.input_VRPTW.NumVertices; ++j) {
 				if (i == j) {
 					inputESPPRC.ReducedCost[i][j] = 0;
 				}
@@ -61,6 +61,42 @@ void renewReducedCost(Data_Input_ESPPRC& inputESPPRC, const Parameter_TOPTW_CG& 
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("renewReducedCost", exc);
+	}
+}
+
+
+bool isBool(const IloCplex& cplex, const IloNumVarArray& X) {
+	try {
+		for (int i = 0; i < X.getSize(); ++i) {
+			if (!(equalToReal(cplex.getValue(X[i]), 0, PPM) || equalToReal(cplex.getValue(X[i]), 1, PPM))) {
+				return false;
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("isBool", exc);
+	}
+	return true;
+}
+
+
+void TOPTW_CG::getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X) {
+	try {
+		integerSolution.clear();
+		for (int i = 0; i < X.getSize(); ++i) {
+			if (equalToReal(cplex.getValue(X[i]), 1, PPM)) {
+				integerSolution.push_back(columns[i]);
+			}
+			else if (!equalToReal(cplex.getValue(X[i]), 0, PPM)) throw exception();
+		}
+		double value = 0;
+		for (const auto& elem : integerSolution) {
+			value += elem.getRealCost();
+		}
+		if (!equalToReal(value, cplex.getObjValue(), PPM)) throw exception();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("TOPTW_CG::getIntegerSolution", exc);
 	}
 }
 
@@ -86,18 +122,29 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, ostream& ou
 		// Define the variables of restricted master problem.
 		IloNumVarArray X(env);
 
+		// Set parameters of Data_Input_ESPPRC.
+		Data_Input_ESPPRC inputESPPRC = setParametersInputESPPRCFromInputVRPTW(parameter.input_VRPTW);
+
+		// Get the initial set of routes.
+		vector<Route_VRPTW> initialRoutes = parameter.initialRoutes.empty() ? generateInitialRoutes(inputESPPRC) : parameter.initialRoutes;
+
 		// Initiate the model of restricted master problem.
-		InitiateRMP(parameter, objectiveRMP, constraintRMP, X);
+		InitiateRMP(initialRoutes, objectiveRMP, constraintRMP, X);
 
 		// Define the solver of restricted master problem.
 		IloCplex solverRMP(modelRMP);
 
-		Data_Input_ESPPRC inputESPPRC = parameter.inputESPPRC;
+		// Set the initial solution status to be feasible.
+		feasible = true;
+
 		for (int iter = 1; true; ++iter) {
 			// Solve the RMP.
 			strLog = "\nSolve the master problem for the " + numToStr(iter) + "th time.";
 			print(parameter.allowPrintLog, output, strLog);
-			solveModel(solverRMP);
+			if (!solverRMP.solve()) {
+				feasible = false;
+				break;
+			}
 
 			// Get dual values.
 			IloNumArray dualValue(env);
@@ -128,13 +175,63 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, ostream& ou
 			print(parameter.allowPrintLog, output, strLog);
 		}
 
-		// Check whether the optimal solution of this node is integral or linear, then get other information about this optimal solution.
+		if (feasible) {
+			// Check whether the optimal solution is an integer solution.
+			integer = isBool(solverRMP, X);
+			if (integer) {
+				getIntegerSolution(solverRMP, X);
+			}
 
-		// If the optimal solution is linear, then get two child nodes by branching.
+			// Set other information.
+			value = solverRMP.getObjValue();
+			explored = true;
+		}
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("TOPTW_CG::columnGeneration", exc);
 	}
 	env.end();
+}
+
+
+// To be completed.
+void testTOPTW() {
+	try {
+		Data_Input_VRPTW inputVRPTW;
+		inputVRPTW.constrainResource = { false,false,true };
+
+		string outFile = "data//CMTVRPTW//Test//TOPTW//Output//testTOPTW.txt";
+		ofstream os(outFile);
+		if (!os) throw exception();
+
+		string folder = { "data//CMTVRPTW//Test//TOPTW//Input//" };
+		vector<string> names;
+		getFiles(folder, vector<string>(), names);
+
+		clock_t last = clock();
+		for (const auto& name : names) {
+			string strInput = folder + name;
+			readFromFileVRPTW(inputVRPTW, strInput);
+			inputVRPTW.preprocess();
+			cout << "*****************************************" << endl;
+			cout << "*****************************************" << endl;
+			cout << "*****************************************" << endl;
+			cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << '\t' << "Time: " << runTime(last) << endl;
+			os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t' << inputVRPTW.density << '\t';
+
+			last = clock();
+
+			// To be completed.
+
+
+
+
+
+		}
+		os.close();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("testTOPTW", exc);
+	}
 }
 

@@ -261,8 +261,8 @@ Data_Input_ESPPRC setParametersInputESPPRCFromInputVRPTW(const Data_Input_VRPTW 
 		inputESPPRC.allowPrintLog = false;
 		inputESPPRC.dominateUninserted = true;
 		inputESPPRC.dominateInserted = false;
-		inputESPPRC.constrainResource = { true,false,true };
-		inputESPPRC.applyLB = { true,false,true };
+		inputESPPRC.constrainResource = inputVRPTW.constrainResource;
+		inputESPPRC.applyLB = inputVRPTW.constrainResource;
 
 		inputESPPRC.preprocess();
 	}

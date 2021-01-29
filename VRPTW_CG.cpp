@@ -67,9 +67,14 @@ void VRPTW_CG::InitiateRMP(const vector<Route_VRPTW> &initialRoutes, IloObjectiv
 
 
 double solveModel(IloCplex &solver) {
-	solver.solve();
-	solver.out() << "solution status = " << solver.getStatus() << endl;
-	solver.out() << "objective = " << solver.getObjValue() << endl;
+	try {
+		solver.solve();
+		solver.out() << "solution status = " << solver.getStatus() << endl;
+		solver.out() << "objective = " << solver.getObjValue() << endl;
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("solveModel", exc);
+	}
 	return solver.getObjValue();
 }
 
