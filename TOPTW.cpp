@@ -80,20 +80,20 @@ bool isBool(const IloCplex& cplex, const IloNumVarArray& X) {
 }
 
 
-void TOPTW_CG::getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X) {
+void TOPTW_CG::getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X, Solution_TOPTW_CG& solution) {
 	try {
-		integerSolution.clear();
+		solution.integerSolution.clear();
 		for (int i = 0; i < X.getSize(); ++i) {
 			if (equalToReal(cplex.getValue(X[i]), 1, PPM)) {
-				integerSolution.push_back(columns[i]);
+				solution.integerSolution.push_back(columns[i]);
 			}
 			else if (!equalToReal(cplex.getValue(X[i]), 0, PPM)) throw exception();
 		}
-		double value = 0;
-		for (const auto& elem : integerSolution) {
-			value += elem.getRealCost();
+		solution.UB_Integer = 0;
+		for (const auto& elem : solution.integerSolution) {
+			solution.UB_Integer += elem.getRealCost();
 		}
-		if (!equalToReal(value, cplex.getObjValue(), PPM)) throw exception();
+		if (!equalToReal(solution.UB_Integer, cplex.getObjValue(), PPM)) throw exception();
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("TOPTW_CG::getIntegerSolution", exc);
@@ -101,7 +101,7 @@ void TOPTW_CG::getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X
 }
 
 
-void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, ostream& output) {
+void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TOPTW_CG& solution, ostream& output) {
 	IloEnv env;
 	try {
 		string strLog = "Begin running the procedure titled TOPTW_CG::columnGeneration.";
@@ -109,9 +109,8 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, ostream& ou
 
 		// Define the model of restricted master problem.
 		IloModel modelRMP(env);
-
-		// Define the objective function of restricted master problem.
 		IloObjective objectiveRMP = IloAdd(modelRMP, IloMaximize(env));
+		IloNumVarArray X(env);
 
 		// Define bounds of constraints of restricted master problem.
 		IloNumArray RightSide(env, parameter.input_VRPTW.NumVertices);
@@ -119,36 +118,32 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, ostream& ou
 		for (int i = 1; i < parameter.input_VRPTW.NumVertices; ++i) RightSide[i] = 1;
 		IloRangeArray constraintRMP = IloAdd(modelRMP, IloRangeArray(env, -IloInfinity, RightSide));
 
-		// Define the variables of restricted master problem.
-		IloNumVarArray X(env);
-
 		// Set parameters of Data_Input_ESPPRC.
 		Data_Input_ESPPRC inputESPPRC = setParametersInputESPPRCFromInputVRPTW(parameter.input_VRPTW);
 
 		// Get the initial set of routes.
 		vector<Route_VRPTW> initialRoutes = parameter.initialRoutes.empty() ? generateInitialRoutes(inputESPPRC) : parameter.initialRoutes;
-
-		// Initiate the model of restricted master problem.
 		InitiateRMP(initialRoutes, objectiveRMP, constraintRMP, X);
 
 		// Define the solver of restricted master problem.
 		IloCplex solverRMP(modelRMP);
 
 		// Set the initial solution status to be feasible.
-		feasible = true;
+		solution.feasible = true;
 
 		for (int iter = 1; true; ++iter) {
 			// Solve the RMP.
 			strLog = "\nSolve the master problem for the " + numToStr(iter) + "th time.";
 			print(parameter.allowPrintLog, output, strLog);
 			if (!solverRMP.solve()) {
-				feasible = false;
+				solution.feasible = false;
 				break;
 			}
 
 			// Get dual values.
 			IloNumArray dualValue(env);
 			solverRMP.getDuals(dualValue, constraintRMP);
+			double fixedReducedCost = dualValue[0] + dualValue[inputESPPRC.NumVertices];
 
 			// Renew reduced cost.
 			renewReducedCost(inputESPPRC, parameter, dualValue);
@@ -160,10 +155,10 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, ostream& ou
 			auto resultSP = DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
 
 			// Stopping criterion.
-			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, 0)) {
+			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost() + fixedReducedCost, -PPM, 0)) {
 				inputESPPRC.mustOptimal = true;
 				resultSP = DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
-				if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, 0)) break;
+				if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost() + fixedReducedCost, -PPM, 0)) break;
 			}
 
 			// Add new columns.
@@ -171,20 +166,20 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, ostream& ou
 				addColumn(elem, objectiveRMP, constraintRMP, X);
 			}
 			strLog = numToStr(resultSP.size()) + " routes are added." + '\t' +
-				"The minimum reduced cost of added routes: " + numToStr(resultSP.begin()->getReducedCost());
+				"The minimum reduced cost of added routes: " + numToStr(resultSP.begin()->getReducedCost() + fixedReducedCost);
 			print(parameter.allowPrintLog, output, strLog);
 		}
 
-		if (feasible) {
+		if (solution.feasible) {
 			// Check whether the optimal solution is an integer solution.
-			integer = isBool(solverRMP, X);
-			if (integer) {
-				getIntegerSolution(solverRMP, X);
+			solution.integer = isBool(solverRMP, X);
+			if (solution.integer) {
+				getIntegerSolution(solverRMP, X, solution);
 			}
 
 			// Set other information.
-			value = solverRMP.getObjValue();
-			explored = true;
+			solution.LB_Linear = solverRMP.getObjValue();
+			solution.explored = true;
 		}
 	}
 	catch (const exception& exc) {
