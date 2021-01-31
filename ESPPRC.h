@@ -184,6 +184,10 @@ private:
 	double reducedCost;
 
 public:
+	// Default constructor.
+	Cost_ESPPRC() {}
+	// Constructor.
+	Cost_ESPPRC(double real, double reduced) :realCost(real), reducedCost(reduced) {}
 	double getRealCost() const { return realCost; }
 	double getReducedCost() const { return reducedCost; }
 	// Reset this object.
@@ -207,6 +211,8 @@ public:
 	Label_ESPPRC() {}
 	// Constructor.
 	Label_ESPPRC(const Data_Input_ESPPRC &data, const int origin, const Consumption_ESPPRC &csp, const Cost_ESPPRC &cst);
+	// Constructor.
+	Label_ESPPRC(const vector<int>& pth, const Cost_ESPPRC& cst) :path(pth), cost(cst) {}
 
 	vector<int> getPath() const { return path; }
 	int getTail() const { return tail; }

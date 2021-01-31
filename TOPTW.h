@@ -18,6 +18,8 @@ public:
 	int numArtificial;									// The number of artificial variables.
 
 	void reviseInputVRPTW();
+	void reviseInitialRoutes();
+	void reviseNumArtificial() { numArtificial = std::max(1, numArtificial); }
 };
 
 class Solution_TOPTW_CG {
@@ -36,7 +38,7 @@ private:
 public:
 	void clearColumns() { columns.clear(); }
 	void addColumn(const Route_VRPTW& rhs, IloObjective& objectiveRMP, IloRangeArray& constraintRMP, IloNumVarArray& X);
-	void InitiateRMP(const vector<Route_VRPTW>& initialRoutes, IloObjective& objectiveRMP, IloRangeArray& constraintRMP, IloNumVarArray& X);
+	void InitiateRMP(const Parameter_TOPTW_CG& parameter, const Data_Input_ESPPRC& inputESPPRC, IloObjective& objectiveRMP, IloRangeArray& constraintRMP, IloNumVarArray& X);
 	void columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TOPTW_CG& solution, ostream& output);
 	void getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X, Solution_TOPTW_CG& solution);
 };

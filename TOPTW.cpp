@@ -39,6 +39,23 @@ void Parameter_TOPTW_CG::reviseInputVRPTW() {
 }
 
 
+void Parameter_TOPTW_CG::reviseInitialRoutes() {
+	try {
+		Data_Input_ESPPRC inputESPPRC = setParametersInputESPPRCFromInputVRPTW(input_VRPTW);
+		vector<Route_VRPTW> routes;
+		for (auto&& elem : initialRoutes) {
+			if (elem.feasible(inputESPPRC)) {
+				routes.push_back(std::move(elem));
+			}
+		}
+		swap(routes, initialRoutes);
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("Parameter_TOPTW_CG::reviseInitialRoutes", exc);
+	}
+}
+
+
 void TOPTW_CG::addColumn(const Route_VRPTW& rhs, IloObjective& objectiveRMP, IloRangeArray& constraintRMP, IloNumVarArray& X) {
 	try {
 		// Add the column.
@@ -69,10 +86,33 @@ void TOPTW_CG::addColumn(const Route_VRPTW& rhs, IloObjective& objectiveRMP, Ilo
 }
 
 
-void TOPTW_CG::InitiateRMP(const vector<Route_VRPTW>& initialRoutes, IloObjective& objectiveRMP, IloRangeArray& constraintRMP, IloNumVarArray& X) {
+void TOPTW_CG::InitiateRMP(const Parameter_TOPTW_CG& parameter, const Data_Input_ESPPRC& inputESPPRC, IloObjective& objectiveRMP, 
+	IloRangeArray& constraintRMP, IloNumVarArray& X) {
 	try {
 		clearColumns();
-		for (const auto& rhs : initialRoutes) {
+
+		// Generate a dummy column.
+		vector<int> dummyPath;
+		for (const auto& elem : parameter.branchOnVertices) {
+			if (elem.second) {
+				dummyPath.push_back(elem.first);
+			}
+		}
+		Cost_ESPPRC cst(-InfinityNeg, 0);
+		Route_VRPTW dummyRoute(dummyPath, cst);
+
+		// Generate other dummy columns and add them.
+		vector<Route_VRPTW> dummyRoutes({ dummyRoute });
+		for (int i = 1; i < parameter.numArtificial; ++i) {
+			dummyRoutes.push_back(Route_VRPTW(vector<int>(), cst));
+		}
+		for (int i = 0; i < parameter.numArtificial; ++i) {
+			addColumn(dummyRoutes[i], objectiveRMP, constraintRMP, X);
+		}
+
+		// Add initial columns.
+		for (const auto& rhs : parameter.initialRoutes) {
+			if (!rhs.feasible(inputESPPRC)) throw exception();
 			addColumn(rhs, objectiveRMP, constraintRMP, X);
 		}
 	}
@@ -202,7 +242,7 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 
 		// Initialization.
 		Data_Input_ESPPRC inputESPPRC = setParametersInputESPPRCFromInputVRPTW(parameter.input_VRPTW);
-		InitiateRMP(parameter.initialRoutes, objectiveRMP, constraintRMP, X);
+		InitiateRMP(parameter, inputESPPRC, objectiveRMP, constraintRMP, X);
 
 		// Solve the problem iteratively.
 		IloCplex solverRMP(modelRMP);
