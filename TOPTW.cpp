@@ -304,39 +304,115 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 }
 
 
+void BBNODE::reviseParameter() {
+	try {
+		parameter.reviseInputVRPTW();
+		parameter.reviseInitialRoutes();
+		parameter.reviseNumArtificial();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("BBNODE::reviseParameter", exc);
+	}
+}
+
+
+void BBNODE::solve(ostream& output) {
+	try {
+		reviseParameter();
+		model.columnGeneration(parameter, solution, output);
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("BBNODE::solve", exc);
+	}
+}
+
+
+BBNODE generateRootNode(const Data_Input_VRPTW& inputVRPTW) {
+	BBNODE rootNode;
+	try {
+		Parameter_TOPTW_CG rootParameter;
+		rootParameter.input_VRPTW = inputVRPTW;
+		rootParameter.allowPrintLog = true;
+		rootParameter.branchOnVehicleNumber = make_pair(inputVRPTW.MaxNumVehicles, false);
+		rootParameter.numArtificial = 0;
+		rootNode.parameter = rootParameter;
+
+		Solution_TOPTW_CG rootSolution;
+		rootSolution.explored = false;
+		rootSolution.LB_Linear = InfinityNeg;
+		rootSolution.UB_Integer = InfinityPos;
+		rootNode.solution = rootSolution;
+
+		rootNode.model = TOPTW_CG();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("generateRootNode", exc);
+	}
+	return rootNode;
+}
+
+
 // To be completed.
 void testTOPTW() {
 	try {
-		Data_Input_VRPTW inputVRPTW;
-		inputVRPTW.constrainResource = { false,false,true };
-
 		string outFile = "data//CMTVRPTW//Test//TOPTW//Output//testTOPTW.txt";
 		ofstream os(outFile);
 		if (!os) throw exception();
 
-		string folder = { "data//CMTVRPTW//Test//TOPTW//Input//" };
+		Data_Input_VRPTW inputVRPTW;
+		inputVRPTW.constrainResource = { false,false,true };
+
+		vector<string> folders = { "data//CMTVRPTW//Test//TOPTW//Input//Solomon Type 2 - 25//",
+			"data//CMTVRPTW//Test//TOPTW//Input//Solomon Type 2 - 40//",
+			"data//CMTVRPTW//Test//TOPTW//Input//Solomon Type 2 - 50//" };
 		vector<string> names;
-		getFiles(folder, vector<string>(), names);
+		getFiles(folders[0], vector<string>(), names);
 
 		clock_t last = clock();
-		for (const auto& name : names) {
-			string strInput = folder + name;
-			readFromFileVRPTW(inputVRPTW, strInput);
-			inputVRPTW.preprocess();
-			cout << "*****************************************" << endl;
-			cout << "*****************************************" << endl;
-			cout << "*****************************************" << endl;
-			cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << '\t' << "Time: " << runTime(last) << endl;
-			os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t' << inputVRPTW.density << '\t';
+		for (const auto& folder : folders) {
+			for (const auto& name : names) {
+				if (folder == "data//CMTVRPTW//Solomon Type 2 - 50//" && name[0] == 'R' && name[1] == '2') {
+					continue;
+				}
+				string strInput = folder + name;
+				readFromFileVRPTW(inputVRPTW, strInput);
 
-			last = clock();
+				for (int i = 0; i < inputVRPTW.NumVertices; ++i) {
+					for (int j = 0; j < inputVRPTW.NumVertices; ++j) {
+						inputVRPTW.Quantity[i][j] = 0;
+						inputVRPTW.Distance[i][j] = 0;
+						if (i != 0 && i != j) {
+							inputVRPTW.RealCost[i][j] = 1;
+						}
+						else {
+							inputVRPTW.RealCost[i][j] = 0;
+						}
+					}
+				}
 
-			// To be completed.
+				writeToFileVRPTW(inputVRPTW, strInput);
 
+				inputVRPTW.preprocess();
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << '\t' << "Time: " << runTime(last) << endl;
+				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.density << '\t';
 
+				last = clock();
+				auto rootNode = generateRootNode(inputVRPTW);
+				rootNode.solve(cout);
 
-
-
+				os << rootNode.solution.explored << '\t' << rootNode.solution.feasible << '\t' << rootNode.solution.integer << '\t'
+					<< rootNode.solution.LB_Linear << '\t' << rootNode.solution.UB_Integer << '\t';
+				for (const auto& route : rootNode.solution.integerSolution) {
+					os << "[ ";
+					for (const auto& elem : route.getPath()) {
+						os << elem << ' ';
+					}
+					os << "]. ";
+				}
+			}
 		}
 		os.close();
 	}
