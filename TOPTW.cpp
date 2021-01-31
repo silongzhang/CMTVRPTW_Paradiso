@@ -65,6 +65,24 @@ void renewReducedCost(Data_Input_ESPPRC& inputESPPRC, const Parameter_TOPTW_CG& 
 }
 
 
+bool isFeasible(const Parameter_TOPTW_CG& parameter, const IloCplex& cplex, const IloNumVarArray& X) {
+	try {
+
+
+
+
+
+
+
+
+
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("isFeasible", exc);
+	}
+}
+
+
 bool isBool(const IloCplex& cplex, const IloNumVarArray& X) {
 	try {
 		for (int i = 0; i < X.getSize(); ++i) {
@@ -101,6 +119,38 @@ void TOPTW_CG::getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X
 }
 
 
+void setRangeArray(const Parameter_TOPTW_CG& parameter, IloModel& modelRMP, IloRangeArray& constraintRMP) {
+	try {
+		auto env = modelRMP.getEnv();
+
+		// Constraint: the number of available vehicles is limited.
+		constraintRMP.add(IloAdd(modelRMP, IloRange(env, -IloInfinity, parameter.input_VRPTW.MaxNumVehicles)));
+
+		// Constraints: a vertex can be visited at most once, also, constraints due to branching on vertices are considered.
+		for (int i = 1; i < parameter.input_VRPTW.NumVertices; ++i) {
+			auto pos = parameter.branchOnVertices.find(i);
+			if (pos == parameter.branchOnVertices.end()) {
+				constraintRMP.add(IloAdd(modelRMP, IloRange(env, -IloInfinity, 1)));
+			}
+			else if (pos->second) {
+				constraintRMP.add(IloAdd(modelRMP, IloRange(env, 1, 1)));
+			}
+			else {
+				constraintRMP.add(IloAdd(modelRMP, IloRange(env, 0, 0)));
+			}
+		}
+
+		// Constraint: due to branching on the number of vehicles.
+		auto bovn = parameter.branchOnVehicleNumber;
+		bovn.second ? constraintRMP.add(IloAdd(modelRMP, IloRange(env, bovn.first, IloInfinity))) : 
+			constraintRMP.add(IloAdd(modelRMP, IloRange(env, -IloInfinity, bovn.first)));
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setRangeArray", exc);
+	}
+}
+
+
 void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TOPTW_CG& solution, ostream& output) {
 	IloEnv env;
 	try {
@@ -109,36 +159,22 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 
 		// Define the model of restricted master problem.
 		IloModel modelRMP(env);
-		IloObjective objectiveRMP = IloAdd(modelRMP, IloMaximize(env));
 		IloNumVarArray X(env);
+		IloObjective objectiveRMP = IloAdd(modelRMP, IloMaximize(env));
+		IloRangeArray constraintRMP(env);
+		setRangeArray(parameter, modelRMP, constraintRMP);
 
-		// Define bounds of constraints of restricted master problem.
-		IloNumArray RightSide(env, parameter.input_VRPTW.NumVertices);
-		RightSide[0] = parameter.input_VRPTW.MaxNumVehicles;
-		for (int i = 1; i < parameter.input_VRPTW.NumVertices; ++i) RightSide[i] = 1;
-		IloRangeArray constraintRMP = IloAdd(modelRMP, IloRangeArray(env, -IloInfinity, RightSide));
-
-		// Set parameters of Data_Input_ESPPRC.
+		// Initialization.
 		Data_Input_ESPPRC inputESPPRC = setParametersInputESPPRCFromInputVRPTW(parameter.input_VRPTW);
+		InitiateRMP(parameter.initialRoutes, objectiveRMP, constraintRMP, X);
 
-		// Get the initial set of routes.
-		vector<Route_VRPTW> initialRoutes = parameter.initialRoutes.empty() ? generateInitialRoutes(inputESPPRC) : parameter.initialRoutes;
-		InitiateRMP(initialRoutes, objectiveRMP, constraintRMP, X);
-
-		// Define the solver of restricted master problem.
+		// Solve the problem iteratively.
 		IloCplex solverRMP(modelRMP);
-
-		// Set the initial solution status to be feasible.
-		solution.feasible = true;
-
 		for (int iter = 1; true; ++iter) {
 			// Solve the RMP.
 			strLog = "\nSolve the master problem for the " + numToStr(iter) + "th time.";
 			print(parameter.allowPrintLog, output, strLog);
-			if (!solverRMP.solve()) {
-				solution.feasible = false;
-				break;
-			}
+			if (!solverRMP.solve()) throw exception();
 
 			// Get dual values.
 			IloNumArray dualValue(env);
@@ -169,6 +205,13 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 				"The minimum reduced cost of added routes: " + numToStr(resultSP.begin()->getReducedCost() + fixedReducedCost);
 			print(parameter.allowPrintLog, output, strLog);
 		}
+
+		// The solution is feasible if values of all artificial variables are zero.
+
+
+
+
+
 
 		if (solution.feasible) {
 			// Check whether the optimal solution is an integer solution.

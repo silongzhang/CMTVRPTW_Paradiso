@@ -13,8 +13,9 @@ public:
 	unordered_map<int, bool> branchOnVertices;			// [i, true] means vertex i must be visited; false means vertex i cannot be visited.
 	unordered_map<pair<int, int>, bool> branchOnArcs;	// [(i, j), true] means arc (i, j) must be visited if i and j are visited; 
 														// false means (i, j) cannot be visited.
-	unordered_map<int, bool> branchOnVehicleNumber;		// [m, true] means the number of vehicles must be greater than or equal to m;
+	pair<int, bool> branchOnVehicleNumber;				// [m, true] means the number of vehicles must be greater than or equal to m;
 														// false means the number of vehicles must be less than or equal to m.
+	int numArtificial;									// The number of artificial variables.
 };
 
 class Solution_TOPTW_CG {
@@ -38,6 +39,7 @@ public:
 	void getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X, Solution_TOPTW_CG& solution);
 };
 
+void setRangeArray(const Parameter_TOPTW_CG& parameter, IloModel& modelRMP, IloRangeArray& constraintRMP);
 void renewReducedCost(Data_Input_ESPPRC& inputESPPRC, const Parameter_TOPTW_CG& parameter, const IloNumArray& dualValue);
 bool isBool(const IloCplex& cplex, const IloNumVarArray& X);
 
