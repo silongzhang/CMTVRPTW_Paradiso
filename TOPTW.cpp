@@ -1,6 +1,44 @@
 #include"TOPTW.h"
 
 
+void Parameter_TOPTW_CG::reviseInputVRPTW() {
+	try {
+		// Revise the existing status of arcs.
+		for (const auto& elem : branchOnArcs) {
+			int i = elem.first.first, j = elem.first.second;
+			if (elem.second) {
+				// Arc (i, j) must be visited if i and j are visited.
+				for (int k = 0; k < input_VRPTW.NumVertices; ++k) {
+					if (k != j) {
+						input_VRPTW.ExistingArcs[i][k] = false;
+					}
+					if (k != i) {
+						input_VRPTW.ExistingArcs[k][j] = false;
+					}
+				}
+			}
+			else {
+				// Arc (i, j) cannot be visited.
+				input_VRPTW.ExistingArcs[i][j] = false;
+			}
+		}
+
+		// Revise the existing status of vertices.
+		for (const auto& elem : branchOnVertices) {
+			if (!elem.second) {
+				int i = elem.first;
+				for (int j = 0; j < input_VRPTW.NumVertices; ++j) {
+					input_VRPTW.ExistingArcs[i][j] = input_VRPTW.ExistingArcs[j][i] = false;
+				}
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("Parameter_TOPTW_CG::reviseInputVRPTW", exc);
+	}
+}
+
+
 void TOPTW_CG::addColumn(const Route_VRPTW& rhs, IloObjective& objectiveRMP, IloRangeArray& constraintRMP, IloNumVarArray& X) {
 	try {
 		// Add the column.
@@ -67,19 +105,16 @@ void renewReducedCost(Data_Input_ESPPRC& inputESPPRC, const Parameter_TOPTW_CG& 
 
 bool isFeasible(const Parameter_TOPTW_CG& parameter, const IloCplex& cplex, const IloNumVarArray& X) {
 	try {
-
-
-
-
-
-
-
-
-
+		for (int i = 0; i < parameter.numArtificial; ++i) {
+			if (!equalToReal(cplex.getValue(X[i]), 0, PPM)) {
+				return false;
+			}
+		}
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("isFeasible", exc);
 	}
+	return true;
 }
 
 
@@ -112,6 +147,7 @@ void TOPTW_CG::getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X
 			solution.UB_Integer += elem.getRealCost();
 		}
 		if (!equalToReal(solution.UB_Integer, cplex.getObjValue(), PPM)) throw exception();
+		solution.UB_Integer = -solution.UB_Integer;
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("TOPTW_CG::getIntegerSolution", exc);
@@ -207,11 +243,7 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 		}
 
 		// The solution is feasible if values of all artificial variables are zero.
-
-
-
-
-
+		solution.feasible = isFeasible(parameter, solverRMP, X);
 
 		if (solution.feasible) {
 			// Check whether the optimal solution is an integer solution.
@@ -221,7 +253,7 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 			}
 
 			// Set other information.
-			solution.LB_Linear = solverRMP.getObjValue();
+			solution.LB_Linear = -solverRMP.getObjValue();
 			solution.explored = true;
 		}
 	}

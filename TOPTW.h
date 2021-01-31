@@ -16,6 +16,8 @@ public:
 	pair<int, bool> branchOnVehicleNumber;				// [m, true] means the number of vehicles must be greater than or equal to m;
 														// false means the number of vehicles must be less than or equal to m.
 	int numArtificial;									// The number of artificial variables.
+
+	void reviseInputVRPTW();
 };
 
 class Solution_TOPTW_CG {
@@ -39,7 +41,20 @@ public:
 	void getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X, Solution_TOPTW_CG& solution);
 };
 
+class BBNODE {
+private:
+	Parameter_TOPTW_CG parameter;
+	Solution_TOPTW_CG solution;
+	TOPTW_CG model;
+public:
+	// Revise the input parameter.
+
+	// Solve the model.
+
+};
+
 void setRangeArray(const Parameter_TOPTW_CG& parameter, IloModel& modelRMP, IloRangeArray& constraintRMP);
 void renewReducedCost(Data_Input_ESPPRC& inputESPPRC, const Parameter_TOPTW_CG& parameter, const IloNumArray& dualValue);
 bool isBool(const IloCplex& cplex, const IloNumVarArray& X);
+bool isFeasible(const Parameter_TOPTW_CG& parameter, const IloCplex& cplex, const IloNumVarArray& X);
 
