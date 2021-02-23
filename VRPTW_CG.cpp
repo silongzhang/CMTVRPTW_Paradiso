@@ -175,7 +175,6 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 			// Solve the subproblem.
 			Data_Auxiliary_ESPPRC auxiliary;
 			input.mustOptimal = false;
-			input.minRunTime = 0;
 			auto resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
 			/*
 			vector<double> mrt = { 1,5 };

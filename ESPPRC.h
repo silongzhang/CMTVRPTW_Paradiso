@@ -55,8 +55,6 @@ public:
 
 	// Whether at least one optimal solution must be found.
 	bool mustOptimal;
-	// The minimum run time if mustOptimal = false and optimal solutions are not necessarily already found.
-	double minRunTime;
 	// The maximum time for applying dominance rule.
 	double maxDominanceTime;
 	// The maximum time for running the procedure.

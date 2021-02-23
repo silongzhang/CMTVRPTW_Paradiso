@@ -268,7 +268,6 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 			// Solve the subproblem.
 			Data_Auxiliary_ESPPRC auxiliary;
 			inputESPPRC.mustOptimal = false;
-			inputESPPRC.minRunTime = 0;
 			auto resultSP = DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
 
 			// Stopping criterion.

@@ -749,10 +749,6 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> coreDPAlgorithmESPPRC(const 
 						}
 					}
 				}
-				if (!auxiliary.onlyPotential && !data.mustOptimal && greaterThanReal(runTime(auxiliary.startTime), data.minRunTime, PPM) &&
-					lessThanReal(auxiliary.ub, data.maxReducedCost, PPM)) {
-					loop = false;
-				}
 				if (!auxiliary.onlyPotential && (numCandidates > data.maxNumCandidates || !lessThanReal(runTime(auxiliary.startTime), data.maxRunTime, PPM))) {
 					strLog = "Terminate because of the limit of number of labels or elapsed time." + '\n';
 					print(data.allowPrintLog, output, strLog);
@@ -849,7 +845,7 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> DPAlgorithmESPPRC(const Data
 		auxiliary.onlyPotential = false;
 		auxiliary.ub = resultUB.begin()->getReducedCost();
 		auxiliary.lastTime = clock();
-		if (data.mustOptimal || lessThanReal(runTime(auxiliary.startTime), data.minRunTime, PPM) || !lessThanReal(auxiliary.ub, data.maxReducedCost, PPM)) {
+		if (data.mustOptimal) {
 			// DP Algorithm
 			strLog = "Elapsed time: " + numToStr(runTime(auxiliary.startTime)) + '\t' + "Begin the DP procedure." + '\n';
 			print(data.allowPrintLog, output, strLog);
@@ -1194,7 +1190,7 @@ void Data_Input_ESPPRC::print(ostream &output) const {
 			<< numNegArcs << '\t' << percentNegArcs << endl;
 		output << incrementQuantLB << '\t' << sizeQuantLB << '\t' << incrementDistLB << '\t' << sizeDistLB << '\t' 
 			<< incrementTimeLB << '\t' << sizeTimeLB << endl;
-		output << mustOptimal << '\t' << minRunTime << '\t' << maxDominanceTime << '\t' << maxRunTime << '\t' << maxNumCandidates << '\t'
+		output << mustOptimal << '\t' << maxDominanceTime << '\t' << maxRunTime << '\t' << maxNumCandidates << '\t'
 			<< maxReducedCost << '\t' << maxNumRoutesReturned << '\t' << maxNumPotentialEachStep << endl;
 		output << constrainResource[0] << '\t' << constrainResource[1] << '\t' << constrainResource[2] << endl;
 		output << applyLB[0] << '\t' << applyLB[1] << '\t' << applyLB[2] << endl;
@@ -1248,7 +1244,6 @@ double testDPAlgorithmESPPRC(const ParameterTestDPAlgorithmESPPRC &parameter, os
 		data.sizeDistLB = 40;
 		data.sizeTimeLB = 20;
 		data.mustOptimal = true;
-		data.minRunTime = 0;
 		data.maxDominanceTime = 300;
 		data.maxRunTime = 3600;
 		data.maxNumCandidates = 2e7;
