@@ -99,7 +99,7 @@ void TOPTW_CG::InitiateRMP(const Parameter_TOPTW_CG& parameter, const Data_Input
 				dummyPath.push_back(elem.first);
 			}
 		}
-		Cost_ESPPRC cst(-InfinityNeg, 0);
+		Cost_ESPPRC cst(InfinityNeg, 0);
 		Route_VRPTW dummyRoute(dummyPath, cst);
 
 		// Generate other dummy columns and add them.
