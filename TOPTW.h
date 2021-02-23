@@ -10,7 +10,7 @@ public:
 	vector<Route_VRPTW> initialRoutes;
 	bool allowPrintLog;
 
-	map<int, bool> branchOnVertices;			// [i, true] means vertex i must be visited; false means vertex i cannot be visited.
+	map<int, bool> branchOnVertices;					// [i, true] means vertex i must be visited; false means vertex i cannot be visited.
 	map<pair<int, int>, bool> branchOnArcs;				// [(i, j), true] means arc (i, j) must be visited if i and j are visited; 
 														// false means (i, j) cannot be visited.
 	pair<int, bool> branchOnVehicleNumber;				// [m, true] means the number of vehicles must be greater than or equal to m;

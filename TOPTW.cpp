@@ -248,11 +248,14 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 
 		// Solve the problem iteratively.
 		IloCplex solverRMP(modelRMP);
+		clock_t start = clock();
 		for (int iter = 1; true; ++iter) {
 			// Solve the RMP.
 			strLog = "\nSolve the master problem for the " + numToStr(iter) + "th time.";
 			print(parameter.allowPrintLog, output, strLog);
 			if (!solverRMP.solve()) throw exception();
+			strLog = "Time: " + numToStr(runTime(start)) + "\t" + "Objective value: " + numToStr(solverRMP.getObjValue());
+			print(parameter.allowPrintLog, output, strLog);
 
 			// Get dual values.
 			IloNumArray dualValue(env);
@@ -283,6 +286,8 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 				"The minimum reduced cost of added routes: " + numToStr(resultSP.begin()->getReducedCost() + fixedReducedCost);
 			print(parameter.allowPrintLog, output, strLog);
 		}
+		strLog = "Time: " + numToStr(runTime(start));
+		print(parameter.allowPrintLog, output, strLog);
 
 		// The solution is feasible if values of all artificial variables are zero.
 		solution.feasible = isFeasible(parameter, solverRMP, X);
@@ -370,7 +375,7 @@ void testTOPTW() {
 		vector<string> names;
 		getFiles(folders[0], vector<string>(), names);
 
-		clock_t last = clock();
+		clock_t start = clock();
 		for (const auto& folder : folders) {
 			for (const auto& name : names) {
 				if (folder == "data//CMTVRPTW//Solomon Type 2 - 50//" && name[0] == 'R' && name[1] == '2') {
@@ -398,10 +403,10 @@ void testTOPTW() {
 				cout << "*****************************************" << endl;
 				cout << "*****************************************" << endl;
 				cout << "*****************************************" << endl;
-				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << '\t' << "Time: " << runTime(last) << endl;
+				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << '\t' << "Time: " << runTime(start) << endl;
 				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.density << '\t';
 
-				last = clock();
+				clock_t last = clock();
 				auto rootNode = generateRootNode(inputVRPTW);
 				rootNode.solve(cout);
 
@@ -414,6 +419,7 @@ void testTOPTW() {
 					}
 					os << "]. ";
 				}
+				os << endl;
 			}
 		}
 		os.close();
