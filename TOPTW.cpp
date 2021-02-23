@@ -244,6 +244,7 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 
 		// Initialization.
 		Data_Input_ESPPRC inputESPPRC = setParametersInputESPPRCFromInputVRPTW(parameter.input_VRPTW);
+		inputESPPRC.allowPrintLog = true;
 		InitiateRMP(parameter, inputESPPRC, objectiveRMP, constraintRMP, X);
 
 		// Solve the problem iteratively.
