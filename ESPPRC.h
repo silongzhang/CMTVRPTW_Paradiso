@@ -296,6 +296,8 @@ void readFromFile(Data_Input_ESPPRC &data, const string &strInput);
 // Output.
 void printResultsDPAlgorithmESPPRC(const Data_Input_ESPPRC &data, const Data_Auxiliary_ESPPRC &auxiliary, ostream &output,
 	const multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> &result);
+void bisection(const Data_Input_ESPPRC& data, Data_Auxiliary_ESPPRC& auxiliary);
+long long savePotentialLabels(const Data_Input_ESPPRC& data, Data_Auxiliary_ESPPRC& auxiliary, const multiset<double>& potentialValues);
 
 class ParameterTestDPAlgorithmESPPRC {
 public:

@@ -649,6 +649,32 @@ long long numOfLabels(const vector<unordered_map<bitset<Max_Num_Vertex>, list<La
 }
 
 
+void bisection(const Data_Input_ESPPRC& data, Data_Auxiliary_ESPPRC& auxiliary) {
+	for (int i = 1; i < data.NumVertices; ++i) {
+		for (auto& prBtstLst : auxiliary.nextIU[i]) {
+			auto prErasePos = prBtstLst.second.begin();
+			std::advance(prErasePos, prBtstLst.second.size() / 2);
+			prBtstLst.second.erase(prErasePos, prBtstLst.second.end());
+		}
+	}
+}
+
+
+long long savePotentialLabels(const Data_Input_ESPPRC& data, Data_Auxiliary_ESPPRC& auxiliary, const multiset<double>& potentialValues) {
+	const double valuePtt = *prev(potentialValues.end());
+	for (int i = 1; i < data.NumVertices; ++i) {
+		for (auto& prBtstLst : auxiliary.nextIU[i]) {
+			prBtstLst.second.remove_if([valuePtt](const Label_ESPPRC& elem) {return greaterThanReal(elem.getReducedCost(), valuePtt, PPM); });
+		}
+	}
+
+	while (numOfLabels(auxiliary.nextIU) > data.maxNumPotentialEachStep) {
+		bisection(data, auxiliary);
+	}
+	return numOfLabels(auxiliary.nextIU);
+}
+
+
 // Core function of dynamic programming algorithm for ESPPRC.
 multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> coreDPAlgorithmESPPRC(const Data_Input_ESPPRC &data, Data_Auxiliary_ESPPRC &auxiliary,
 	ostream &output) {
@@ -742,18 +768,12 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> coreDPAlgorithmESPPRC(const 
 			strLog += "BoundPruned: " + numToStr(auxiliary.numPrunedLabelsBound) + '\t' +
 				"UnInsertedDominance: " + numToStr(auxiliary.numUnInsertedLabelsDominance) + '\t' +
 				"DeletedDominance: " + numToStr(auxiliary.numDeletedLabelsDominance) + '\n';
-			
+
 			long long numPotentialOriginal = numOfLabels(auxiliary.nextIU);
 			if (!potentialValues.empty() && auxiliary.onlyPotential) {
-				const double valuePtt = *prev(potentialValues.end());
-				for (int i = 1; i < data.NumVertices; ++i) {
-					for (auto &prBtstLst : auxiliary.nextIU[i]) {
-						prBtstLst.second.remove_if([valuePtt](const Label_ESPPRC &elem)
-						{return !lessThanReal(elem.getReducedCost(), valuePtt, PPM); });
-					}
-				}
+				numCandidates = savePotentialLabels(data, auxiliary, potentialValues);
 			}
-			numCandidates = numOfLabels(auxiliary.nextIU);
+
 			auxiliary.numDiscardPotential += numPotentialOriginal - numCandidates;
 			strLog += "DiscardPotential: " + numToStr(auxiliary.numDiscardPotential) + '\t'
 				+ "CandidatesNextIteration: " + numToStr(numCandidates) + '\n';
