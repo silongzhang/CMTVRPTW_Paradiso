@@ -66,6 +66,7 @@ void TOPTW_CG::addColumn(const Route_VRPTW& rhs, IloObjective& objectiveRMP, Ilo
 
 		// The coefficient in constraint for limiting the number of vehicles.
 		col += constraintRMP[0](1);
+		col += constraintRMP[constraintRMP.getSize() - 1](1);
 
 		// The coefficients in constraints for each vertex can be visited at most once.
 		unordered_map<int, int> unMp = getCount(rhs.getPath());
