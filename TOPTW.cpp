@@ -200,8 +200,10 @@ void setRangeArray(const Parameter_TOPTW_CG& parameter, IloModel& modelRMP, IloR
 	try {
 		auto env = modelRMP.getEnv();
 
-		// Constraint: the number of available vehicles is limited.
-		constraintRMP.add(IloAdd(modelRMP, IloRange(env, -IloInfinity, parameter.input_VRPTW.MaxNumVehicles)));
+		// Constraint: the number of vehicles can not be greater than aboveNum.
+		const auto bovn = parameter.branchOnVehicleNumber;
+		const int aboveNum = bovn.second ? parameter.input_VRPTW.MaxNumVehicles : min(parameter.input_VRPTW.MaxNumVehicles, bovn.first);
+		constraintRMP.add(IloAdd(modelRMP, IloRange(env, -IloInfinity, aboveNum)));
 
 		// Constraints: a vertex can be visited at most once, also, constraints due to branching on vertices are considered.
 		for (int i = 1; i < parameter.input_VRPTW.NumVertices; ++i) {
@@ -217,10 +219,9 @@ void setRangeArray(const Parameter_TOPTW_CG& parameter, IloModel& modelRMP, IloR
 			}
 		}
 
-		// Constraint: due to branching on the number of vehicles.
-		auto bovn = parameter.branchOnVehicleNumber;
-		bovn.second ? constraintRMP.add(IloAdd(modelRMP, IloRange(env, bovn.first, IloInfinity))) : 
-			constraintRMP.add(IloAdd(modelRMP, IloRange(env, -IloInfinity, bovn.first)));
+		// Constraint: the number of vehicles can not be less than underNum.
+		const int underNum = bovn.second ? max(bovn.first, 0) : 0;
+		constraintRMP.add(IloAdd(modelRMP, IloRange(env, underNum, IloInfinity)));
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("setRangeArray", exc);
