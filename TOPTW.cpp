@@ -176,19 +176,19 @@ bool isBool(const IloCplex& cplex, const IloNumVarArray& X) {
 
 void TOPTW_CG::getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X, Solution_TOPTW_CG& solution) {
 	try {
-		solution.integerSolution.clear();
+		solution.UB_Integer_Solution.clear();
 		for (int i = 0; i < X.getSize(); ++i) {
 			if (equalToReal(cplex.getValue(X[i]), 1, PPM)) {
-				solution.integerSolution.push_back(columns[i]);
+				solution.UB_Integer_Solution.push_back(columns[i]);
 			}
 			else if (!equalToReal(cplex.getValue(X[i]), 0, PPM)) throw exception();
 		}
-		solution.UB_Integer = 0;
-		for (const auto& elem : solution.integerSolution) {
-			solution.UB_Integer += elem.getRealCost();
+		solution.UB_Integer_Value = 0;
+		for (const auto& elem : solution.UB_Integer_Solution) {
+			solution.UB_Integer_Value += elem.getRealCost();
 		}
-		if (!equalToReal(solution.UB_Integer, cplex.getObjValue(), PPM)) throw exception();
-		solution.UB_Integer = -solution.UB_Integer;
+		if (!equalToReal(solution.UB_Integer_Value, cplex.getObjValue(), PPM)) throw exception();
+		solution.UB_Integer_Value = -solution.UB_Integer_Value;
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("TOPTW_CG::getIntegerSolution", exc);
@@ -273,9 +273,18 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 
 			// Stopping criterion.
 			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost() + fixedReducedCost, -PPM, 0)) {
-				inputESPPRC.mustOptimal = true;
-				resultSP = DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
-				if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost() + fixedReducedCost, -PPM, 0)) break;
+				// When the LP is feasible, the current solution is not an interger solution, 
+				// and the lower bound (the negative of the objective) is less than the upper bound, we can branch directly, 
+				// instead of performing a time-consuming procedure to obtain the optimal objective of the LP.
+				if (isFeasible(parameter, solverRMP, X) && !isBool(solverRMP, X) && 
+					lessThanReal(-solverRMP.getObjValue(), solution.UB_Integer_Value, PPM)) {
+					break;
+				}
+				else {
+					inputESPPRC.mustOptimal = true;
+					resultSP = DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
+					if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost() + fixedReducedCost, -PPM, 0)) break;
+				}
 			}
 
 			// Add new columns.
@@ -291,17 +300,15 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 
 		// The solution is feasible if values of all artificial variables are zero.
 		solution.feasible = isFeasible(parameter, solverRMP, X);
+		solution.objective = -solverRMP.getObjValue();
+		solution.explored = true;
 
 		if (solution.feasible) {
 			// Check whether the optimal solution is an integer solution.
 			solution.integer = isBool(solverRMP, X);
-			if (solution.integer) {
+			if (solution.integer && lessThanReal(solution.objective, solution.UB_Integer_Value, PPM)) {
 				getIntegerSolution(solverRMP, X, solution);
 			}
-
-			// Set other information.
-			solution.LB_Linear = -solverRMP.getObjValue();
-			solution.explored = true;
 		}
 	}
 	catch (const exception& exc) {
@@ -346,8 +353,8 @@ BBNODE generateRootNode(const Data_Input_VRPTW& inputVRPTW) {
 
 		Solution_TOPTW_CG rootSolution;
 		rootSolution.explored = false;
-		rootSolution.LB_Linear = InfinityNeg;
-		rootSolution.UB_Integer = InfinityPos;
+		rootSolution.objective = InfinityNeg;
+		rootSolution.UB_Integer_Value = InfinityPos;
 		rootNode.solution = rootSolution;
 
 		rootNode.model = TOPTW_CG();
@@ -411,8 +418,8 @@ void testTOPTW() {
 				rootNode.solve(cout);
 
 				os << rootNode.solution.explored << '\t' << rootNode.solution.feasible << '\t' << rootNode.solution.integer << '\t'
-					<< rootNode.solution.LB_Linear << '\t' << rootNode.solution.UB_Integer << '\t';
-				for (const auto& route : rootNode.solution.integerSolution) {
+					<< rootNode.solution.objective << '\t' << rootNode.solution.UB_Integer_Value << '\t';
+				for (const auto& route : rootNode.solution.UB_Integer_Solution) {
 					os << "[ ";
 					for (const auto& elem : route.getPath()) {
 						os << elem << ' ';

@@ -24,12 +24,12 @@ public:
 
 class Solution_TOPTW_CG {
 public:
-	bool explored;
-	bool feasible;
-	bool integer;
-	double LB_Linear;
-	double UB_Integer;
-	vector<Route_VRPTW> integerSolution;
+	bool explored;								// Whether this node has been explored.
+	bool feasible;								// Whether the LP formulation corresponding to this node is feasible.
+	bool integer;								// Whether the optimal solution corresponding to this node is an integer solution.
+	double objective;							// The optimal objective value corresponding to this node.
+	double UB_Integer_Value;					// The best (smallest) upperbound found so far.
+	vector<Route_VRPTW> UB_Integer_Solution;	// The best integer solution found so far.
 };
 
 class TOPTW_CG {
