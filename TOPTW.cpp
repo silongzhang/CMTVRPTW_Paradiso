@@ -366,7 +366,9 @@ void testTOPTW() {
 				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.density << '\t';
 
 				clock_t last = clock();
-				auto rootNode = generateRootNode(inputVRPTW);
+				Parameter_BP parameter;
+				parameter.weightLB = parameter.weightDepth = 1;
+				auto rootNode = generateRootNode(inputVRPTW, parameter);
 				rootNode.solve(cout);
 
 				os << rootNode.solution.explored << '\t' << rootNode.solution.feasible << '\t' << rootNode.solution.integer << '\t'

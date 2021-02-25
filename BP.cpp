@@ -1,6 +1,11 @@
 #include"BP.h"
 
 
+bool operator<(const BBNODE& lhs, const BBNODE& rhs) {
+	return lhs.priority < rhs.priority;
+}
+
+
 void BBNODE::reviseParameter() {
 	try {
 		parameter.reviseInputVRPTW();
@@ -24,7 +29,7 @@ void BBNODE::solve(ostream& output) {
 }
 
 
-BBNODE generateRootNode(const Data_Input_VRPTW& inputVRPTW) {
+BBNODE generateRootNode(const Data_Input_VRPTW& inputVRPTW, const Parameter_BP& parameter) {
 	BBNODE rootNode;
 	try {
 		Parameter_TOPTW_CG rootParameter;
@@ -41,6 +46,9 @@ BBNODE generateRootNode(const Data_Input_VRPTW& inputVRPTW) {
 		rootNode.solution = rootSolution;
 
 		rootNode.model = TOPTW_CG();
+
+		rootNode.depth = 1;
+		rootNode.setPriority(parameter.weightLB, parameter.weightDepth);
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("generateRootNode", exc);
