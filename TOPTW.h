@@ -43,20 +43,10 @@ public:
 	void getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X, Solution_TOPTW_CG& solution);
 };
 
-class BBNODE {
-public:
-	Parameter_TOPTW_CG parameter;
-	Solution_TOPTW_CG solution;
-	TOPTW_CG model;
-
-	void reviseParameter();
-	void solve(ostream& output);
-};
 
 void setRangeArray(const Parameter_TOPTW_CG& parameter, IloModel& modelRMP, IloRangeArray& constraintRMP);
 void renewReducedCost(Data_Input_ESPPRC& inputESPPRC, const Parameter_TOPTW_CG& parameter, const IloNumArray& dualValue);
 bool isBool(const IloCplex& cplex, const IloNumVarArray& X);
 bool isFeasible(const Parameter_TOPTW_CG& parameter, const IloCplex& cplex, const IloNumVarArray& X);
-BBNODE generateRootNode(const Data_Input_VRPTW& inputVRPTW);
 void testTOPTW();
 
