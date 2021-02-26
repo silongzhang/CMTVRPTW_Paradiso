@@ -24,5 +24,10 @@ public:
 };
 
 BBNODE generateRootNode(const Data_Input_VRPTW& inputVRPTW, const Parameter_BP& parameter);
+bool isInteger_0(double num);
+double middle(double num);
+pair<bool, int> isInteger_1(const vector<double>& num);
+tuple<bool, int, int> isInteger_2(const vector<vector<double>>& num);
+BBNODE childNode(const Parameter_BP& parameter, const BBNODE& rhs);
 BBNODE BPAlgorithm(const Data_Input_VRPTW& inputVRPTW, const Parameter_BP& parameter, ostream& output);
 
