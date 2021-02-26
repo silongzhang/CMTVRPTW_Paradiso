@@ -30,6 +30,10 @@ public:
 	double objective;							// The optimal objective value corresponding to this node.
 	double UB_Integer_Value;					// The best (smallest) upperbound found so far.
 	vector<Route_VRPTW> UB_Integer_Solution;	// The best integer solution found so far.
+
+	double numVehicles;							// The number of vehicles used.
+	vector<double> visitVertices;				// 0 <= visitVertices[i] <=1, the times at which the vertex i has been visited.
+	vector<vector<double>> visitArcs;			// 0 <= visitArcs[i][j] <=1, the times at which the arc (i, j) has been visited.
 };
 
 class TOPTW_CG {
@@ -41,6 +45,8 @@ public:
 	void InitiateRMP(const Parameter_TOPTW_CG& parameter, const Data_Input_ESPPRC& inputESPPRC, IloObjective& objectiveRMP, IloRangeArray& constraintRMP, IloNumVarArray& X);
 	void columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TOPTW_CG& solution, ostream& output);
 	void getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X, Solution_TOPTW_CG& solution);
+	void getSolution(const Parameter_TOPTW_CG& parameter, const IloCplex& solverRMP, 
+		const IloRangeArray& constraintRMP, const IloNumVarArray& X, Solution_TOPTW_CG& solution);
 };
 
 

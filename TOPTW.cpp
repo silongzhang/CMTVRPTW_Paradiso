@@ -197,6 +197,58 @@ void TOPTW_CG::getIntegerSolution(const IloCplex& cplex, const IloNumVarArray& X
 }
 
 
+void TOPTW_CG::getSolution(const Parameter_TOPTW_CG& parameter, const IloCplex& solverRMP,
+	const IloRangeArray& constraintRMP, const IloNumVarArray& X, Solution_TOPTW_CG& solution) {
+	try {
+		// The solution is feasible if values of all artificial variables are zero.
+		solution.feasible = isFeasible(parameter, solverRMP, X);
+		solution.objective = -solverRMP.getObjValue();
+		solution.explored = true;
+
+		if (solution.feasible) {
+			// Check whether the optimal solution is an integer solution.
+			solution.integer = isBool(solverRMP, X);
+			if (solution.integer && lessThanReal(solution.objective, solution.UB_Integer_Value, PPM)) {
+				getIntegerSolution(solverRMP, X, solution);
+			}
+
+			vector<int> basicVariables;
+			for (int i = 0; i < X.getSize(); ++i) {
+				if (greaterThanReal(solverRMP.getValue(X[i]), 0, PPM)) {
+					basicVariables.push_back(i);
+				}
+			}
+
+			solution.numVehicles = 0;
+			for (const auto& i : basicVariables) {
+				solution.numVehicles += solverRMP.getValue(X[i]);
+			}
+
+			solution.visitVertices.clear();
+			solution.visitArcs.clear();
+			solution.visitVertices.resize(parameter.input_VRPTW.NumVertices);
+			solution.visitArcs.resize(parameter.input_VRPTW.NumVertices);
+			solution.visitArcs[0] = vector<double>(parameter.input_VRPTW.NumVertices, 0);
+			for (int i = 1; i < parameter.input_VRPTW.NumVertices; ++i) {
+				solution.visitVertices[i] = solverRMP.getValue(constraintRMP[i].getExpr());
+				solution.visitArcs[i] = vector<double>(parameter.input_VRPTW.NumVertices, 0);
+			}
+
+			for (const auto& i : basicVariables) {
+				const auto path = columns[i].getPath();
+				auto pre = path.begin();
+				for (auto suc = pre + 1; suc != path.end(); ++pre, ++suc) {
+					solution.visitArcs[*pre][*suc] += solverRMP.getValue(X[i]);
+				}
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("TOPTW_CG::getSolution", exc);
+	}
+}
+
+
 void setRangeArray(const Parameter_TOPTW_CG& parameter, IloModel& modelRMP, IloRangeArray& constraintRMP) {
 	try {
 		auto env = modelRMP.getEnv();
@@ -299,18 +351,7 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 		strLog = "Time: " + numToStr(runTime(start));
 		print(parameter.allowPrintLog, output, strLog);
 
-		// The solution is feasible if values of all artificial variables are zero.
-		solution.feasible = isFeasible(parameter, solverRMP, X);
-		solution.objective = -solverRMP.getObjValue();
-		solution.explored = true;
-
-		if (solution.feasible) {
-			// Check whether the optimal solution is an integer solution.
-			solution.integer = isBool(solverRMP, X);
-			if (solution.integer && lessThanReal(solution.objective, solution.UB_Integer_Value, PPM)) {
-				getIntegerSolution(solverRMP, X, solution);
-			}
-		}
+		getSolution(parameter, solverRMP, constraintRMP, X, solution);
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("TOPTW_CG::columnGeneration", exc);
