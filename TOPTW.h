@@ -19,7 +19,7 @@ public:
 
 	void reviseInputVRPTW();
 	void reviseInitialRoutes();
-	void reviseNumArtificial() { numArtificial = std::max(1, numArtificial); }
+	void reviseNumArtificial() { numArtificial = branchOnVehicleNumber.second ? std::max(1, branchOnVehicleNumber.first) : 1; }
 };
 
 class Solution_TOPTW_CG {

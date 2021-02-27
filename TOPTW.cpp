@@ -303,6 +303,7 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 
 		// Solve the problem iteratively.
 		IloCplex solverRMP(modelRMP);
+		solverRMP.setOut(env.getNullStream());
 		clock_t start = clock();
 		for (int iter = 1; true; ++iter) {
 			// Solve the RMP.

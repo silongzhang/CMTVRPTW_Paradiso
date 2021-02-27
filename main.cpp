@@ -3,10 +3,11 @@
 #include"Enumeration_TimePath.h"
 #include"RSFC.h"
 #include"TOPTW.h"
+#include"BP.h"
 
 
 int main(int argc, char** argv) {
-	testTOPTW();
+	testTOPTW_BP();
 
 	return 0;
 }

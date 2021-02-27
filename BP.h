@@ -6,6 +6,17 @@ class Parameter_BP {
 public:
 	double weightLB;
 	double weightDepth;
+
+	bool allowPrintLog;
+};
+
+class Info_BP {
+public:
+	int prunedInfeasibility;
+	int prunedInteger;
+	int prunedBound;
+
+	int branched;
 };
 
 class BBNODE {
@@ -29,5 +40,8 @@ double middle(double num);
 pair<bool, int> isInteger_1(const vector<double>& num);
 tuple<bool, int, int> isInteger_2(const vector<vector<double>>& num);
 BBNODE childNode(const Parameter_BP& parameter, const BBNODE& rhs);
+void printBranchParameter(const BBNODE& worker);
 BBNODE BPAlgorithm(const Data_Input_VRPTW& inputVRPTW, const Parameter_BP& parameter, ostream& output);
+BBNODE TOPTW_BP(const string& strInput, const Parameter_BP& parameter);
+void testTOPTW_BP();
 
