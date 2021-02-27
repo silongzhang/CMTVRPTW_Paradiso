@@ -221,9 +221,10 @@ BBNODE BPAlgorithm(const Data_Input_VRPTW& inputVRPTW, const Parameter_BP& param
 			}
 		}
 
-		strLog = "Time: " + numToStr(runTime(start)) + "\t" + "Best upper bound: " + numToStr(bestNode.solution.UB_Integer_Value) + "\t"
+		strLog = "\nTime: " + numToStr(runTime(start)) + "\t" + "Best upper bound: " + numToStr(bestNode.solution.UB_Integer_Value) + "\t"
 			+ "Remaining nodes: " + numToStr(nodes.size()) + "\t" + "prunedInfeasibility: " + numToStr(info.prunedInfeasibility) + "\t"
-			+ "prunedInteger: " + numToStr(info.prunedInteger) + "\t" + "prunedBound: " + numToStr(info.prunedBound);
+			+ "prunedInteger: " + numToStr(info.prunedInteger) + "\t" + "prunedBound: " + numToStr(info.prunedBound) + "\t" 
+			+ "branched: " + numToStr(info.branched);
 		print(parameter.allowPrintLog, output, strLog);
 	}
 	catch (const exception& exc) {
