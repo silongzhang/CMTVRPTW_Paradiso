@@ -795,7 +795,7 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> coreDPAlgorithmESPPRC(const 
 		strLog = "Saved: " + numToStr(auxiliary.numSavedLabels) + '\n';
 		print(data.allowPrintLog, output, strLog);
 
-		if (result.empty()) throw exception("The result should not be empty.");
+		//if (result.empty()) throw exception("The result should not be empty.");
 		for (const auto &elem : result) {
 			if (!elem.feasible(data))
 				throw exception("Feasibility checking failed.");
