@@ -433,3 +433,159 @@ void testTOPTW() {
 	}
 }
 
+
+int realIndexTOPTW(int i, int N) {
+	return i % N;
+}
+
+
+void setConstraintsDomainX(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X) {
+	try {
+		const int N = parameter.input_VRPTW.NumVertices;
+		for (int i = 0; i < X.getSize(); ++i) {
+			model.add(X[i][i] == 0);
+			for (int j = 0; j < X[i].getSize(); ++j) {
+				if (!parameter.input_VRPTW.ExistingArcs[realIndexTOPTW(i, N)][realIndexTOPTW(j, N)]) {
+					model.add(X[i][j] == 0);
+				}
+			}
+		}
+
+		for (int j = 0; j < X.getSize(); ++j) {
+			model.add(X[j][0] == 0);
+		}
+
+		for (int j = 0; j < X[N].getSize(); ++j) {
+			model.add(X[N][j] == 0);
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setConstraintsDomainX", exc);
+	}
+}
+
+
+void setConstraintsDomainY(const Parameter_TOPTW_CG& parameter, IloModel model, IloNumVarArray Y) {
+	try {
+		const int N = parameter.input_VRPTW.NumVertices;
+		for (int i = 0; i < N; ++i) {
+			double early = parameter.input_VRPTW.TimeWindow[i].first;
+			double late = parameter.input_VRPTW.TimeWindow[i].second;
+			model.add(early <= Y[i] <= late);
+		}
+
+		double early = parameter.input_VRPTW.TimeWindow[0].first;
+		double late = parameter.input_VRPTW.TimeWindow[0].second;
+		model.add(early <= Y[N] <= late);
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setConstraintsDomainY", exc);
+	}
+}
+
+
+void setConstraintsFlow(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X) {
+	try {
+		const int N = parameter.input_VRPTW.NumVertices;
+		auto env = model.getEnv();
+
+		// The number of available vehicles is limited.
+		IloExpr numVehicles(env);
+		for (int j = 0; j < X[0].getSize(); ++j) {
+			if (parameter.input_VRPTW.ExistingArcs[0][realIndexTOPTW(j, N)])
+				numVehicles += X[0][j];
+		}
+		model.add(numVehicles <= parameter.input_VRPTW.MaxNumVehicles);
+		numVehicles.end();
+
+		for (int i = 1; i < X.getSize() - 1; ++i) {
+			IloExpr out(env), in(env);
+			for (int j = 0; j < X.getSize(); ++j) {
+				if (parameter.input_VRPTW.ExistingArcs[realIndexTOPTW(i, N)][realIndexTOPTW(j, N)])
+					out += X[i][j];
+				if (parameter.input_VRPTW.ExistingArcs[realIndexTOPTW(j, N)][realIndexTOPTW(i, N)])
+					in += X[j][i];
+			}
+			model.add(out == in);			// Flow balance.
+			model.add(out <= 1);			// A customer can be visited at most once.
+			out.end(), in.end();
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setConstraintsFlow", exc);
+	}
+}
+
+
+void setConstraintsTimeWindow(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y) {
+	try {
+		const int N = parameter.input_VRPTW.NumVertices;
+		for (int i = 0; i < X.getSize(); ++i) {
+			for (int j = 0; j < X.getSize(); ++j) {
+				if (parameter.input_VRPTW.ExistingArcs[realIndexTOPTW(i, N)][realIndexTOPTW(j, N)]) {
+					const double tm = parameter.input_VRPTW.Time[realIndexTOPTW(i, N)][realIndexTOPTW(j, N)];
+					const double M = parameter.input_VRPTW.TimeWindow[realIndexTOPTW(i, N)].second + tm 
+						- parameter.input_VRPTW.TimeWindow[realIndexTOPTW(j, N)].first;
+
+					model.add(Y[i] + tm - Y[j] <= (1 - X[i][j]) * M);
+				}
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setConstraintsTimeWindow", exc);
+	}
+}
+
+
+void setObjective(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X) {
+	try {
+		const int N = parameter.input_VRPTW.NumVertices;
+		IloExpr expr(model.getEnv());
+		for (int i = 0; i < X.getSize(); ++i) {
+			for (int j = 0; j < X.getSize() - 1; ++j) {
+				if (parameter.input_VRPTW.ExistingArcs[realIndexTOPTW(i, N)][realIndexTOPTW(j, N)])
+					expr += X[i][j];
+			}
+		}
+		model.add(IloMaximize(model.getEnv(), expr));
+		expr.end();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setObjective", exc);
+	}
+}
+
+
+double TOPTW_ArcFlow(const Parameter_TOPTW_CG& parameter, ostream& output) {
+	double result = InfinityNeg;
+	IloEnv env;
+	try {
+		// Define the variables.
+		const int N = parameter.input_VRPTW.NumVertices;
+		IloBoolVarArray2 X(env, N + 1);
+		for (int i = 0; i < X.getSize(); ++i) {
+			X[i] = IloBoolVarArray(env, N + 1);
+		}
+		IloNumVarArray Y(env, N + 1);
+
+		// Define the model.
+		IloModel model;
+		setObjective(parameter, model, X);
+		setConstraintsDomainX(parameter, model, X);
+		setConstraintsDomainY(parameter, model, Y);
+		setConstraintsFlow(parameter, model, X);
+		setConstraintsTimeWindow(parameter, model, X, Y);
+
+		// Solve the model.
+		IloCplex cplex(model);
+		if (!cplex.solve()) throw exception();
+		result = cplex.getObjValue();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("TOPTW_ArcFlow", exc);
+	}
+	env.end();
+	return result;
+}
+

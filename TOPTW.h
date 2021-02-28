@@ -56,3 +56,10 @@ bool isBool(const IloCplex& cplex, const IloNumVarArray& X);
 bool isFeasible(const Parameter_TOPTW_CG& parameter, const IloCplex& cplex, const IloNumVarArray& X);
 void testTOPTW();
 
+int realIndexTOPTW(int i, int N);
+void setConstraintsDomainX(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X);
+void setConstraintsDomainY(const Parameter_TOPTW_CG& parameter, IloModel model, IloNumVarArray Y);
+void setConstraintsFlow(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X);
+void setConstraintsTimeWindow(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y);
+void setObjective(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X);
+
