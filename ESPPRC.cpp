@@ -837,20 +837,21 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> DPAlgorithmESPPRC(const Data
 		auxiliary.onlyPotential = true;
 		auxiliary.ub = InfinityPos;
 		resultUB = coreDPAlgorithmESPPRC(data, auxiliary, output);
-		if (resultUB.empty()) throw exception();
+		//if (resultUB.empty()) throw exception();
+		if (!resultUB.empty())
+			auxiliary.ub = resultUB.begin()->getReducedCost();
 		auxiliary.timeUB = runTime(auxiliary.lastTime);
 		strLog = "Elapsed time: " + numToStr(runTime(auxiliary.startTime)) + '\t' + "The upper bound computing is finished." + '\n';
 		print(data.allowPrintLog, output, strLog);
 
 		auxiliary.onlyPotential = false;
-		auxiliary.ub = resultUB.begin()->getReducedCost();
 		auxiliary.lastTime = clock();
 		if (data.mustOptimal) {
 			// DP Algorithm
 			strLog = "Elapsed time: " + numToStr(runTime(auxiliary.startTime)) + '\t' + "Begin the DP procedure." + '\n';
 			print(data.allowPrintLog, output, strLog);
 			resultDP = coreDPAlgorithmESPPRC(data, auxiliary, output);
-			if (resultDP.empty()) throw exception();
+			//if (resultDP.empty()) throw exception();
 			strLog = "Elapsed time: " + numToStr(runTime(auxiliary.startTime)) + '\t' + "The DP procedure is finished." + '\n';
 			print(data.allowPrintLog, output, strLog);
 		} 
@@ -864,16 +865,7 @@ multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> DPAlgorithmESPPRC(const Data
 		printErrorAndExit("DPAlgorithmESPPRC", exc);
 	}
 
-	multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> *alternative;
-	if (resultDP.empty()) alternative = &resultUB;
-	else {
-		alternative = (lessThanReal(resultDP.begin()->getReducedCost(), resultUB.begin()->getReducedCost(), PPM) ? &resultDP : &resultUB);
-	}
-	multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> result;
-	for (auto pt = alternative->begin(); pt != alternative->end() && lessThanReal(pt->getReducedCost(), data.maxReducedCost, PPM); ++pt) {
-		result.insert(*pt);
-	}
-	return result;
+	return resultDP.empty() ? resultUB : resultDP;
 }
 
 
@@ -1191,7 +1183,7 @@ void Data_Input_ESPPRC::print(ostream &output) const {
 		output << incrementQuantLB << '\t' << sizeQuantLB << '\t' << incrementDistLB << '\t' << sizeDistLB << '\t' 
 			<< incrementTimeLB << '\t' << sizeTimeLB << endl;
 		output << mustOptimal << '\t' << maxDominanceTime << '\t' << maxRunTime << '\t' << maxNumCandidates << '\t'
-			<< maxReducedCost << '\t' << maxNumRoutesReturned << '\t' << maxNumPotentialEachStep << endl;
+			<< maxNumRoutesReturned << '\t' << maxNumPotentialEachStep << endl;
 		output << constrainResource[0] << '\t' << constrainResource[1] << '\t' << constrainResource[2] << endl;
 		output << applyLB[0] << '\t' << applyLB[1] << '\t' << applyLB[2] << endl;
 		output << dominateUninserted << '\t' << dominateInserted << endl;
@@ -1247,7 +1239,6 @@ double testDPAlgorithmESPPRC(const ParameterTestDPAlgorithmESPPRC &parameter, os
 		data.maxDominanceTime = 300;
 		data.maxRunTime = 3600;
 		data.maxNumCandidates = 2e7;
-		data.maxReducedCost = 0;
 		data.maxNumRoutesReturned = 10;
 		data.maxNumPotentialEachStep = 1e4;
 		data.allowPrintLog = true;

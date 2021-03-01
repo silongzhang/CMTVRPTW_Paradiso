@@ -255,7 +255,6 @@ Data_Input_ESPPRC setParametersInputESPPRCFromInputVRPTW(const Data_Input_VRPTW 
 		inputESPPRC.maxDominanceTime = 60;
 		inputESPPRC.maxRunTime = 3600;
 		inputESPPRC.maxNumCandidates = 1e7;
-		inputESPPRC.maxReducedCost = 0;
 		inputESPPRC.maxNumRoutesReturned = 100;
 		inputESPPRC.maxNumPotentialEachStep = 1e4;
 		inputESPPRC.allowPrintLog = false;

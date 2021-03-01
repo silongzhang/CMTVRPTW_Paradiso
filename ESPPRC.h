@@ -61,8 +61,6 @@ public:
 	double maxRunTime;
 	// The procedure will terminate if candidates in an iteration exceeds this number.
 	int maxNumCandidates;
-	// The reduced cost of returned routes cannot exceed this parameter.
-	double maxReducedCost;
 	// The number of returned routes cannot exceed this parameter.
 	int maxNumRoutesReturned;
 	// The maximum number of saved potential labels at each step when calculating the upper bound.
