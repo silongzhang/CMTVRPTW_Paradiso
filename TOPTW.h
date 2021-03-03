@@ -4,6 +4,12 @@
 #include"VRPTW.h"
 #include"RSFC.h"
 
+class Parameter_TOPTW_ArcFlow {
+public:
+	Data_Input_VRPTW input_VRPTW;
+	bool allowPrintLog;
+};
+
 class Parameter_TOPTW_CG {
 public:
 	Data_Input_VRPTW input_VRPTW;
@@ -57,9 +63,11 @@ bool isFeasible(const Parameter_TOPTW_CG& parameter, const IloCplex& cplex, cons
 void testTOPTW();
 
 int realIndexTOPTW(int i, int N);
-void setConstraintsDomainX(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X);
-void setConstraintsDomainY(const Parameter_TOPTW_CG& parameter, IloModel model, IloNumVarArray Y);
-void setConstraintsFlow(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X);
-void setConstraintsTimeWindow(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y);
-void setObjective(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X);
+void setConstraintsDomainX(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X);
+void setConstraintsDomainY(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloNumVarArray Y);
+void setConstraintsFlow(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X);
+void setConstraintsTimeWindow(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y);
+void setObjective(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X);
+double TOPTW_ArcFlow(const Parameter_TOPTW_ArcFlow& parameter, ostream& output);
+void test_TOPTW_BP_ArcFlow();
 

@@ -32,4 +32,5 @@ double setPrecision(const double data, const int numFloat);
 Instance_Solomon readSolomonInstance(const string &input, const int numVer = 101);
 // Get the paths and names of all files in a folder.
 void getFiles(const string &folder, vector<string> &paths, vector<string> &names);
+vector<int> sample(int begin, int end, int size, int numShuffle);
 

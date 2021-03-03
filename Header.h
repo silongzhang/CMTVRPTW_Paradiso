@@ -66,4 +66,5 @@ using std::greater;
 using std::sort;
 using std::prev;
 using std::next;
+using std::random_shuffle;
 

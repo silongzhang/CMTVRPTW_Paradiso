@@ -78,3 +78,21 @@ void getFiles(const string &folder, vector<string> &paths, vector<string> &names
 }
 
 
+vector<int> sample(int begin, int end, int size, int numShuffle) {
+	vector<int> sequence;
+	try {
+		if (end < begin || size > end - begin) throw exception();
+
+		for (int i = begin; i < end; ++i) {
+			sequence.push_back(i);
+		}
+		for (int i = 0; i < numShuffle; ++i) {
+			random_shuffle(sequence.begin(), sequence.end());
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("sample", exc);
+	}
+	return vector<int>(sequence.begin(), sequence.begin() + size);
+}
+

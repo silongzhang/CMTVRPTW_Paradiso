@@ -439,7 +439,7 @@ int realIndexTOPTW(int i, int N) {
 }
 
 
-void setConstraintsDomainX(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X) {
+void setConstraintsDomainX(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
 	try {
 		const int N = parameter.input_VRPTW.NumVertices;
 		for (int i = 0; i < X.getSize(); ++i) {
@@ -465,7 +465,7 @@ void setConstraintsDomainX(const Parameter_TOPTW_CG& parameter, IloModel model, 
 }
 
 
-void setConstraintsDomainY(const Parameter_TOPTW_CG& parameter, IloModel model, IloNumVarArray Y) {
+void setConstraintsDomainY(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloNumVarArray Y) {
 	try {
 		const int N = parameter.input_VRPTW.NumVertices;
 		for (int i = 0; i < N; ++i) {
@@ -484,7 +484,7 @@ void setConstraintsDomainY(const Parameter_TOPTW_CG& parameter, IloModel model, 
 }
 
 
-void setConstraintsFlow(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X) {
+void setConstraintsFlow(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
 	try {
 		const int N = parameter.input_VRPTW.NumVertices;
 		auto env = model.getEnv();
@@ -517,7 +517,7 @@ void setConstraintsFlow(const Parameter_TOPTW_CG& parameter, IloModel model, Ilo
 }
 
 
-void setConstraintsTimeWindow(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y) {
+void setConstraintsTimeWindow(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y) {
 	try {
 		const int N = parameter.input_VRPTW.NumVertices;
 		for (int i = 0; i < X.getSize(); ++i) {
@@ -538,7 +538,7 @@ void setConstraintsTimeWindow(const Parameter_TOPTW_CG& parameter, IloModel mode
 }
 
 
-void setObjective(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVarArray2 X) {
+void setObjective(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
 	try {
 		const int N = parameter.input_VRPTW.NumVertices;
 		IloExpr expr(model.getEnv());
@@ -557,7 +557,7 @@ void setObjective(const Parameter_TOPTW_CG& parameter, IloModel model, IloBoolVa
 }
 
 
-double TOPTW_ArcFlow(const Parameter_TOPTW_CG& parameter, ostream& output) {
+double TOPTW_ArcFlow(const Parameter_TOPTW_ArcFlow& parameter, ostream& output) {
 	double result = InfinityNeg;
 	IloEnv env;
 	try {
@@ -579,6 +579,7 @@ double TOPTW_ArcFlow(const Parameter_TOPTW_CG& parameter, ostream& output) {
 
 		// Solve the model.
 		IloCplex cplex(model);
+		if (!parameter.allowPrintLog) cplex.setOut(env.getNullStream());
 		if (!cplex.solve()) throw exception();
 		result = cplex.getObjValue();
 	}
@@ -587,5 +588,66 @@ double TOPTW_ArcFlow(const Parameter_TOPTW_CG& parameter, ostream& output) {
 	}
 	env.end();
 	return result;
+}
+
+
+void test_TOPTW_BP_ArcFlow() {
+	try {
+		string outFile = "data//CMTVRPTW//Test//TOPTW//Output//TOPTW_BP_ArcFlow.txt";
+		ofstream os(outFile);
+		if (!os) throw exception();
+
+		const string folder = "data//CMTVRPTW//Test//TOPTW//Input//TOPTW_BP_ArcFlow//";
+		vector<string> names;
+		getFiles(folder, vector<string>(), names);
+
+		Parameter_BP parameter;
+		parameter.weightDepth = 1;
+		parameter.weightLB = 1;
+		parameter.allowPrintLog = true;
+
+		clock_t last = clock();
+		for (const auto& name : names) {
+			string strInput = folder + name;
+
+			last = clock();
+			cout << "#########################################" << endl;
+			cout << "#########################################" << endl;
+			cout << "#########################################" << endl;
+			cout << "Method: ArcFlow" << '\t' << "Instance: " << strInput << endl;
+			Parameter_TOPTW_ArcFlow parameterArcFlow;
+			readFromFileVRPTW(parameterArcFlow.input_VRPTW, strInput);
+			parameterArcFlow.input_VRPTW.constrainResource = { false,false,true };
+			parameterArcFlow.input_VRPTW.preprocess();
+			parameterArcFlow.allowPrintLog = true;
+
+			double objectiveArcFlow = TOPTW_ArcFlow(parameterArcFlow, cout);
+			os << parameterArcFlow.input_VRPTW.name << '\t' << parameterArcFlow.input_VRPTW.NumVertices << '\t' 
+				<< parameterArcFlow.input_VRPTW.density << '\t' << runTime(last) << '\t' << objectiveArcFlow << '\t';
+
+			last = clock();
+			cout << "*****************************************" << endl;
+			cout << "*****************************************" << endl;
+			cout << "*****************************************" << endl;
+			cout << "Method: BP" << '\t' << "Instance: " << strInput << endl;
+			auto bestNode = TOPTW_BP(strInput, parameter);
+
+			os << runTime(last) << '\t';
+			os << bestNode.solution.explored << '\t' << bestNode.solution.feasible << '\t' << bestNode.solution.integer << '\t'
+				<< bestNode.solution.objective << '\t' << bestNode.solution.UB_Integer_Value << '\t';
+			for (const auto& route : bestNode.solution.UB_Integer_Solution) {
+				os << "[ ";
+				for (const auto& elem : route.getPath()) {
+					os << elem << ' ';
+				}
+				os << "]. ";
+			}
+			os << endl;
+		}
+		os.close();
+	}	
+	catch (const exception& exc) {
+		printErrorAndExit("test_TOPTW_BP_ArcFlow", exc);
+	}
 }
 
