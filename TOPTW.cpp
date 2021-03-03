@@ -282,6 +282,36 @@ void setRangeArray(const Parameter_TOPTW_CG& parameter, IloModel& modelRMP, IloR
 }
 
 
+multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> subFunction_TOPTW_CG(const Parameter_TOPTW_CG& parameter, Data_Input_ESPPRC& inputESPPRC,
+	IloCplex solverRMP, IloRangeArray constraintRMP, double& fixedReducedCost, int& iter, ostream& output, clock_t& start) {
+	try {
+		auto env = solverRMP.getEnv();
+
+		// Solve the RMP.
+		string strLog = "\nSolve the master problem for the " + numToStr(++iter) + "th time.";
+		print(parameter.allowPrintLog, output, strLog);
+		if (!solverRMP.solve()) throw exception();
+		strLog = "Time: " + numToStr(runTime(start)) + "\t" + "Objective value: " + numToStr(solverRMP.getObjValue());
+		print(parameter.allowPrintLog, output, strLog);
+
+		// Get dual values.
+		IloNumArray dualValue(env);
+		solverRMP.getDuals(dualValue, constraintRMP);
+		fixedReducedCost = dualValue[0] + dualValue[inputESPPRC.NumVertices];
+
+		// Renew reduced cost.
+		renewReducedCost(inputESPPRC, parameter, dualValue);
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("subFunction_TOPTW_CG", exc);
+	}
+
+	// Solve the subproblem.
+	Data_Auxiliary_ESPPRC auxiliary;
+	return DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
+}
+
+
 void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TOPTW_CG& solution, ostream& output) {
 	IloEnv env;
 	try {
@@ -305,26 +335,11 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 		IloCplex solverRMP(modelRMP);
 		solverRMP.setOut(env.getNullStream());
 		clock_t start = clock();
-		for (int iter = 1; true; ++iter) {
-			// Solve the RMP.
-			strLog = "\nSolve the master problem for the " + numToStr(iter) + "th time.";
-			print(parameter.allowPrintLog, output, strLog);
-			if (!solverRMP.solve()) throw exception();
-			strLog = "Time: " + numToStr(runTime(start)) + "\t" + "Objective value: " + numToStr(solverRMP.getObjValue());
-			print(parameter.allowPrintLog, output, strLog);
-
-			// Get dual values.
-			IloNumArray dualValue(env);
-			solverRMP.getDuals(dualValue, constraintRMP);
-			double fixedReducedCost = dualValue[0] + dualValue[inputESPPRC.NumVertices];
-
-			// Renew reduced cost.
-			renewReducedCost(inputESPPRC, parameter, dualValue);
-
+		double fixedReducedCost;
+		for (int iter = 0; true;) {
 			// Solve the subproblem.
-			Data_Auxiliary_ESPPRC auxiliary;
 			inputESPPRC.mustOptimal = false;
-			auto resultSP = DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
+			auto resultSP = subFunction_TOPTW_CG(parameter, inputESPPRC, solverRMP, constraintRMP, fixedReducedCost, iter, output, start);
 
 			// Stopping criterion.
 			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost() + fixedReducedCost, -PPM, 0)) {
@@ -337,7 +352,7 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 				}
 				else {
 					inputESPPRC.mustOptimal = true;
-					resultSP = DPAlgorithmESPPRC(inputESPPRC, auxiliary, output);
+					resultSP = subFunction_TOPTW_CG(parameter, inputESPPRC, solverRMP, constraintRMP, fixedReducedCost, iter, output, start);
 					if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost() + fixedReducedCost, -PPM, 0)) break;
 				}
 			}

@@ -58,6 +58,8 @@ public:
 
 void setRangeArray(const Parameter_TOPTW_CG& parameter, IloModel& modelRMP, IloRangeArray& constraintRMP);
 void renewReducedCost(Data_Input_ESPPRC& inputESPPRC, const Parameter_TOPTW_CG& parameter, const IloNumArray& dualValue);
+multiset<Label_ESPPRC, Label_ESPPRC_Sort_Criterion> subFunction_TOPTW_CG(const Parameter_TOPTW_CG& parameter, Data_Input_ESPPRC& inputESPPRC,
+	IloCplex solverRMP, IloRangeArray constraintRMP, double& fixedReducedCost, int& iter, ostream& output, clock_t& start);
 bool isBool(const IloCplex& cplex, const IloNumVarArray& X);
 bool isFeasible(const Parameter_TOPTW_CG& parameter, const IloCplex& cplex, const IloNumVarArray& X);
 void testTOPTW();
