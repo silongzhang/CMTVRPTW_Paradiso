@@ -61,6 +61,7 @@ public:
 void readDataSolomonVRPTW(const Instance_Solomon &inst, Data_Input_VRPTW &data, const double coefDist, const int precision);
 // Write input data to file.
 void writeToFileVRPTW(const Data_Input_VRPTW &data, const string &strOutput);
+Data_Input_VRPTW subData(const Data_Input_VRPTW& data, const vector<int>& index, int numVehicles);
 // Transfer Solomon file to VRPTW data file.
 void transferDataFileVRPTW(const Parameter_TransferDataFileVRPTW &prm, const string &inputSolomon, const string &strOutput, const int precision);
 // Transfer Solomon files in a folder to VRPTW data files.

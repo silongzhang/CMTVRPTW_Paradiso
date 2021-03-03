@@ -129,6 +129,59 @@ void writeToFileVRPTW(const Data_Input_VRPTW &data, const string &strOutput) {
 }
 
 
+// Note that the first element of the vector "index" must be 0. 
+Data_Input_VRPTW subData(const Data_Input_VRPTW& data, const vector<int>& index, int numVehicles) {
+	Data_Input_VRPTW result;
+	try {
+		const int N = index.size();
+
+		if (data.NumVertices < N || index[0] != 0) throw exception();
+		set<int> st;
+		for (int i = 0; i < N; ++i) {
+			st.insert(index[i]);
+		}
+		if (*st.begin() < 0 || *prev(st.end()) >= N || st.size() != N) throw exception();
+
+		result.name = data.name;
+		result.NumVertices = N;
+		result.MaxNumVehicles = numVehicles;
+		result.capacity = data.capacity;
+
+		result.Quantity.resize(N); result.QuantityWindow.resize(N);
+		result.Distance.resize(N); result.DistanceWindow.resize(N);
+		result.Time.resize(N); result.TimeWindow.resize(N);
+		result.RealCost.resize(N);
+		result.UnreachableForever.resize(N);
+		result.ExistingArcs.resize(N);
+
+		for (int i = 0; i < N; ++i) {
+			result.QuantityWindow[i] = data.QuantityWindow[index[i]];
+			result.DistanceWindow[i] = data.DistanceWindow[index[i]];
+			result.TimeWindow[i] = data.TimeWindow[index[i]];
+
+			result.Quantity[i].resize(N);
+			result.Distance[i].resize(N);
+			result.Time[i].resize(N);
+			result.RealCost[i].resize(N);
+			result.ExistingArcs[i].resize(N);
+
+			for (int j = 0; j < N; ++j) {
+				result.Quantity[i][j] = data.Quantity[index[i]][index[j]];
+				result.Distance[i][j] = data.Distance[index[i]][index[j]];
+				result.Time[i][j] = data.Time[index[i]][index[j]];
+				result.RealCost[i][j] = data.RealCost[index[i]][index[j]];
+				result.UnreachableForever[i].set(j, data.UnreachableForever[index[i]].test(index[j]));
+				result.ExistingArcs[i][j] = data.ExistingArcs[index[i]][index[j]];
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("subData(const Data_Input_VRPTW& data, const vector<int>& index, int numVehicles)", exc);
+	}
+	return result;
+}
+
+
 // Transfer Solomon file to VRPTW data file.
 void transferDataFileVRPTW(const Parameter_TransferDataFileVRPTW &prm, const string &inputSolomon, const string &strOutput, const int precision) {
 	try {
