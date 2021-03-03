@@ -7,6 +7,7 @@
 
 
 int main(int argc, char** argv) {
+	test_TOPTW_BP_ArcFlow();
 
 	return 0;
 }

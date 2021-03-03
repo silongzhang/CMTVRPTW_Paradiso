@@ -467,16 +467,16 @@ void setConstraintsDomainX(const Parameter_TOPTW_ArcFlow& parameter, IloModel mo
 
 void setConstraintsDomainY(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloNumVarArray Y) {
 	try {
+		auto env = model.getEnv();
 		const int N = parameter.input_VRPTW.NumVertices;
+		IloNumArray early(env, N + 1), late(env, N + 1);
 		for (int i = 0; i < N; ++i) {
-			double early = parameter.input_VRPTW.TimeWindow[i].first;
-			double late = parameter.input_VRPTW.TimeWindow[i].second;
-			model.add(early <= Y[i] <= late);
+			early[i] = parameter.input_VRPTW.TimeWindow[i].first;
+			late[i] = parameter.input_VRPTW.TimeWindow[i].second;
 		}
-
-		double early = parameter.input_VRPTW.TimeWindow[0].first;
-		double late = parameter.input_VRPTW.TimeWindow[0].second;
-		model.add(early <= Y[N] <= late);
+		early[N] = parameter.input_VRPTW.TimeWindow[0].first;
+		late[N] = parameter.input_VRPTW.TimeWindow[0].second;
+		Y = IloNumVarArray(env, early, late);
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("setConstraintsDomainY", exc);
@@ -540,15 +540,16 @@ void setConstraintsTimeWindow(const Parameter_TOPTW_ArcFlow& parameter, IloModel
 
 void setObjective(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
 	try {
+		auto env = model.getEnv();
 		const int N = parameter.input_VRPTW.NumVertices;
-		IloExpr expr(model.getEnv());
+		IloExpr expr(env);
 		for (int i = 0; i < X.getSize(); ++i) {
 			for (int j = 0; j < X.getSize() - 1; ++j) {
 				if (parameter.input_VRPTW.ExistingArcs[realIndexTOPTW(i, N)][realIndexTOPTW(j, N)])
 					expr += X[i][j];
 			}
 		}
-		model.add(IloMaximize(model.getEnv(), expr));
+		model.add(IloMaximize(env, expr));
 		expr.end();
 	}
 	catch (const exception& exc) {
@@ -568,9 +569,10 @@ double TOPTW_ArcFlow(const Parameter_TOPTW_ArcFlow& parameter, ostream& output) 
 			X[i] = IloBoolVarArray(env, N + 1);
 		}
 		IloNumVarArray Y(env, N + 1);
+		for (int i = 0; i < Y.getSize(); ++i) Y[i] = IloNumVar(env);
 
 		// Define the model.
-		IloModel model;
+		IloModel model(env);
 		setObjective(parameter, model, X);
 		setConstraintsDomainX(parameter, model, X);
 		setConstraintsDomainY(parameter, model, Y);
@@ -578,10 +580,13 @@ double TOPTW_ArcFlow(const Parameter_TOPTW_ArcFlow& parameter, ostream& output) 
 		setConstraintsTimeWindow(parameter, model, X, Y);
 
 		// Solve the model.
+		clock_t start = clock();
 		IloCplex cplex(model);
-		if (!parameter.allowPrintLog) cplex.setOut(env.getNullStream());
+		cplex.setOut(env.getNullStream());
 		if (!cplex.solve()) throw exception();
 		result = cplex.getObjValue();
+		string strLog = "Time: " + numToStr(runTime(start)) + "\t" + "Objective value: " + numToStr(result);
+		print(parameter.allowPrintLog, output, strLog);
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("TOPTW_ArcFlow", exc);

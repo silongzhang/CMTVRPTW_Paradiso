@@ -77,7 +77,6 @@ pair<bool, Route_VRPTW> generateRoute(const Data_Input_ESPPRC &inputESPPRC, cons
 vector<Route_VRPTW> generateInitialRoutes(const Data_Input_ESPPRC &inputESPPRC);
 // Get the value of a lower bound at the root node of BP tree.
 Solution_VRPTW_CG lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW);
-
-
 void testVRPTWCG();
+void sampleDataInputVRPTW(const string& strInput, const string& outFolder, const vector<int>& sizes, const vector<int>& numVehicles);
 

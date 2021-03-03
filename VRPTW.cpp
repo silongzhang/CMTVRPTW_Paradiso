@@ -140,7 +140,7 @@ Data_Input_VRPTW subData(const Data_Input_VRPTW& data, const vector<int>& index,
 		for (int i = 0; i < N; ++i) {
 			st.insert(index[i]);
 		}
-		if (*st.begin() < 0 || *prev(st.end()) >= N || st.size() != N) throw exception();
+		if (*st.begin() < 0 || *prev(st.end()) >= data.NumVertices || st.size() != N) throw exception();
 
 		result.name = data.name;
 		result.NumVertices = N;
@@ -438,6 +438,26 @@ void testVRPTWCG() {
 	}
 	catch (const exception &exc) {
 		printErrorAndExit("testVRPTWCG", exc);
+	}
+}
+
+
+void sampleDataInputVRPTW(const string& strInput, const string& outFolder, const vector<int>& sizes, const vector<int>& numVehicles) {
+	try {
+		Data_Input_VRPTW inputVRPTW;
+		readFromFileVRPTW(inputVRPTW, strInput);
+		for (const auto& size : sizes) {
+			vector<int> index = sample(1, inputVRPTW.NumVertices, size, 200);
+			index.insert(index.begin(), 0);
+			for (const auto& num : numVehicles) {
+				Data_Input_VRPTW result = subData(inputVRPTW, index, num);
+				string strOutput = outFolder + inputVRPTW.name + "_" + numToStr(size) + "_" + numToStr(num) + ".txt";
+				writeToFileVRPTW(result, strOutput);
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("sampleDataInputVRPTW", exc);
 	}
 }
 
