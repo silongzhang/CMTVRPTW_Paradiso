@@ -96,3 +96,38 @@ vector<int> sample(int begin, int end, int size, int numShuffle) {
 	return vector<int>(sequence.begin(), sequence.begin() + size);
 }
 
+
+pair<bool, int> outNode(const unordered_set<int>& excluded, const IloCplex& cplex, const IloBoolVarArray2& X, int start) {
+	bool exist = false;
+	int index = -1;
+	try {
+		for (int j = 0; j < X[start].getSize(); ++j) {
+			if (cplex.getValue(X[start][j]) == IloTrue && excluded.find(j) == excluded.end()) {
+				exist = true;
+				index = j;
+				break;
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("outNode", exc);
+	}
+	return make_pair(exist, index);
+}
+
+
+vector<int> getPath(const unordered_set<int>& excluded, const IloCplex& cplex, const IloBoolVarArray2& X, int start) {
+	int current = start;
+	vector<int> result = { current };
+	try {
+		for (auto out = outNode(excluded, cplex, X, current); out.first; out = outNode(excluded, cplex, X, current)) {
+			current = out.second;
+			result.push_back(current);
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("getPath", exc);
+	}
+	return result;
+}
+

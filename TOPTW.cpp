@@ -482,16 +482,15 @@ void setConstraintsDomainX(const Parameter_TOPTW_ArcFlow& parameter, IloModel mo
 
 void setConstraintsDomainY(const Parameter_TOPTW_ArcFlow& parameter, IloModel model, IloNumVarArray Y) {
 	try {
-		auto env = model.getEnv();
 		const int N = parameter.input_VRPTW.NumVertices;
-		IloNumArray early(env, N + 1), late(env, N + 1);
 		for (int i = 0; i < N; ++i) {
-			early[i] = parameter.input_VRPTW.TimeWindow[i].first;
-			late[i] = parameter.input_VRPTW.TimeWindow[i].second;
+			double early = parameter.input_VRPTW.TimeWindow[i].first;
+			double late = parameter.input_VRPTW.TimeWindow[i].second;
+			model.add(early <= Y[i] <= late);
 		}
-		early[N] = parameter.input_VRPTW.TimeWindow[0].first;
-		late[N] = parameter.input_VRPTW.TimeWindow[0].second;
-		Y = IloNumVarArray(env, early, late);
+		double early = parameter.input_VRPTW.TimeWindow[0].first;
+		double late = parameter.input_VRPTW.TimeWindow[0].second;
+		model.add(early <= Y[N] <= late);
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("setConstraintsDomainY", exc);
