@@ -327,7 +327,10 @@ void TOPTW_CG::columnGeneration(const Parameter_TOPTW_CG& parameter, Solution_TO
 
 		// Initialization.
 		Data_Input_ESPPRC inputESPPRC = setParametersInputESPPRCFromInputVRPTW(parameter.input_VRPTW);
-		// inputESPPRC.allowPrintLog = true;
+		inputESPPRC.maxRunTime = 3600;
+		inputESPPRC.maxNumCandidates = 1e9;
+		inputESPPRC.maxNumPotentialEachStep = 1e6;
+		inputESPPRC.allowPrintLog = false;
 		solution.explored = solution.feasible = solution.integer = false;
 		InitiateRMP(parameter, inputESPPRC, objectiveRMP, constraintRMP, X);
 
