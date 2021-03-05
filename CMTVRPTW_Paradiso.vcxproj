@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BP.cpp" />
+    <ClCompile Include="CMTVRPTW.cpp" />
     <ClCompile Include="define.cpp" />
     <ClCompile Include="Enumeration_TimePath.cpp" />
     <ClCompile Include="ESPPRC.cpp" />
@@ -24,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BP.h" />
+    <ClInclude Include="CMTVRPTW.h" />
     <ClInclude Include="define.h" />
     <ClInclude Include="Enumeration_TimePath.h" />
     <ClInclude Include="ESPPRC.h" />
