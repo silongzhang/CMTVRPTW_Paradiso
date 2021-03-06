@@ -26,8 +26,6 @@ class Parameter_VRPTW_CG {
 public:
 	// Whether the solution can be fractional.
 	bool canBeFractional;
-	// Threshold value for solving the subproblem (ESPPRC) in an optimal style.
-	double thresholdPercentNegArcs;
 	// Whether printing is allowed.
 	bool allowPrintLog;
 };

@@ -307,9 +307,9 @@ Data_Input_ESPPRC setParametersInputESPPRCFromInputVRPTW(const Data_Input_VRPTW 
 		inputESPPRC.incrementTimeLB = floor((inputESPPRC.TimeWindow[0].second - inputESPPRC.TimeWindow[0].first) / inputESPPRC.sizeTimeLB);
 		inputESPPRC.maxDominanceTime = 60;
 		inputESPPRC.maxRunTime = 3600;
-		inputESPPRC.maxNumCandidates = 1e7;
+		inputESPPRC.maxNumCandidates = 1e9;
 		inputESPPRC.maxNumRoutesReturned = 100;
-		inputESPPRC.maxNumPotentialEachStep = 1e4;
+		inputESPPRC.maxNumPotentialEachStep = 1e6;
 		inputESPPRC.allowPrintLog = false;
 		inputESPPRC.dominateUninserted = true;
 		inputESPPRC.dominateInserted = false;
@@ -388,7 +388,6 @@ Solution_VRPTW_CG lbAtCGRootNodeVRPTW(const Data_Input_VRPTW &inputVRPTW) {
 		// Set parameters for CG algorithm.
 		Parameter_VRPTW_CG prm;
 		prm.canBeFractional = true;
-		prm.thresholdPercentNegArcs = 0.01;
 		prm.allowPrintLog = true;
 
 		// Run the CG algorithm.

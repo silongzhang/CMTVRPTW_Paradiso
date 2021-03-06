@@ -1240,7 +1240,7 @@ double testDPAlgorithmESPPRC(const ParameterTestDPAlgorithmESPPRC &parameter, os
 		data.maxRunTime = 3600;
 		data.maxNumCandidates = 2e7;
 		data.maxNumRoutesReturned = 10;
-		data.maxNumPotentialEachStep = 1e4;
+		data.maxNumPotentialEachStep = 1e6;
 		data.allowPrintLog = true;
 		data.constrainResource = { true,true,true };
 		data.applyLB = data.constrainResource;
