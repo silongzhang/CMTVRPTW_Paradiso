@@ -133,17 +133,12 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 
 		// Define the model of restricted master problem.
 		IloModel modelRMP(env);
-
-		// Define the objective function of restricted master problem.
+		IloNumVarArray X(env);
 		IloObjective objectiveRMP = IloAdd(modelRMP, IloMinimize(env));
 
-		// Define bounds of constraints of restricted master problem.
 		IloNumArray leftSide(env, inputESPPRC.NumVertices);
 		for (int i = 1; i < inputESPPRC.NumVertices; ++i) leftSide[i] = 1;
 		IloRangeArray constraintRMP = IloAdd(modelRMP, IloRangeArray(env, leftSide, IloInfinity));
-
-		// Define the variables of restricted master problem.
-		IloNumVarArray X(env);
 
 		// Initiate the model of restricted master problem.
 		InitiateRMP(initialRoutes, objectiveRMP, constraintRMP, X);
@@ -151,13 +146,12 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 		// Define the solver of restricted master problem.
 		IloCplex solverRMP(modelRMP);
 //		solverRMP.setOut(env.getNullStream());
-
 		int iter = 0;
 		do {
 			// Solve the RMP.
 			strLog = "\nSolve the master problem for the " + numToStr(++iter) + "th time.";
 			print(prm.allowPrintLog, output, strLog);
-			solveModel(solverRMP);
+			if (!solverRMP.solve()) throw exception();
 
 			// Get dual values.
 			IloNumArray dualValue(env);
@@ -176,17 +170,6 @@ Solution_VRPTW_CG VRPTW_CG::columnGeneration(const Data_Input_ESPPRC &inputESPPR
 			Data_Auxiliary_ESPPRC auxiliary;
 			input.mustOptimal = false;
 			auto resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
-			/*
-			vector<double> mrt = { 1,5 };
-			for (auto posMRT = mrt.begin(); resultSP.empty() && posMRT != mrt.end(); ++posMRT) {
-				input.minRunTime = *posMRT;
-				resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
-			}
-			if (resultSP.empty()) {
-				input.mustOptimal = true;
-				resultSP = DPAlgorithmESPPRC(input, auxiliary, output);
-			}
-			*/
 
 			// Stopping criterion for iteration.
 			if (resultSP.empty() || greaterThanReal(resultSP.begin()->getReducedCost(), -PPM, 0)) {
