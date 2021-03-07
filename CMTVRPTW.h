@@ -28,3 +28,5 @@ public:
 	Solution_OPRE_2019_1874 solve(const Parameter_OPRE_2019_1874& parameter);
 };
 
+Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput);
+
