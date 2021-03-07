@@ -191,6 +191,7 @@ set<tuple<int, int, int>> detectAdditionalTriplets(const Data_Input_VRPTW& input
 
 
 void RSFC(outputRSFC& output, const Data_Input_VRPTW& input, const Map_Label_TimePath& stt) {
+	cout << "Begin running the procedure titled RSFC." << endl;
 	IloEnv env;
 	try {
 		output.structures.clear(); output.times.clear(); output.triplets.clear();
@@ -210,7 +211,7 @@ void RSFC(outputRSFC& output, const Data_Input_VRPTW& input, const Map_Label_Tim
 		// Solve the model.
 		IloCplex cplex(model);
 		for (int i = 1; true; ++i) {
-			env.out() << "solve the RSFC model for the " << i << "th time." << endl;
+			env.out() << endl << "solve the RSFC model for the " << i << "th time." << endl;
 			cplex.solve();
 			auto additionalTimes = detectAdditionalTimes(input, output.structures, timeSet, cplex, x);
 			for (const auto& elem : additionalTimes) timeSet.insert(elem);
@@ -253,10 +254,12 @@ void RSFC(outputRSFC& output, const Data_Input_VRPTW& input, const Map_Label_Tim
 		printErrorAndExit("RSFC", exc);
 	}
 	env.end();
+	cout << "The procedure titled RSFC is finished." << endl;
 }
 
 
 vector<Label_TimePath> StructureReduction(const Data_Input_VRPTW& input, const outputRSFC& rsfc, const double reducedCostGap) {
+	cout << "Begin running the procedure titled StructureReduction." << endl;
 	vector<Label_TimePath> result;
 	try {
 		for (const auto& elem : rsfc.structures) {
@@ -268,6 +271,7 @@ vector<Label_TimePath> StructureReduction(const Data_Input_VRPTW& input, const o
 	catch (const exception& exc) {
 		printErrorAndExit("StructureReduction", exc);
 	}
+	cout << "The procedure titled StructureReduction is finished." << endl;
 	return result;
 }
 

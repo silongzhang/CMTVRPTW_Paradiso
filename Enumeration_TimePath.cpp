@@ -220,6 +220,7 @@ long long initiateForEnumerationStructure(const Data_Input_ESPPRC& input, vector
 
 
 Map_Label_TimePath EnumerationStructure(const Data_Input_ESPPRC& input, double maxRC) {
+	cout << "Begin running the procedure titled EnumerationStructure." << endl;
 	Map_Label_TimePath result(0);
 	try {
 		// Compute the completion bounds.
@@ -286,6 +287,7 @@ Map_Label_TimePath EnumerationStructure(const Data_Input_ESPPRC& input, double m
 	catch (const exception& exc) {
 		printErrorAndExit("EnumerationStructure", exc);
 	}
+	cout << "The procedure titled EnumerationStructure is finished." << endl;
 	return result;
 }
 
