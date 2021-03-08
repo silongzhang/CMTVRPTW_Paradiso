@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BC.cpp" />
     <ClCompile Include="BP.cpp" />
     <ClCompile Include="CMTVRPTW.cpp" />
     <ClCompile Include="define.cpp" />
@@ -24,6 +25,7 @@
     <ClCompile Include="VRPTW_CG.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BC.h" />
     <ClInclude Include="BP.h" />
     <ClInclude Include="CMTVRPTW.h" />
     <ClInclude Include="define.h" />

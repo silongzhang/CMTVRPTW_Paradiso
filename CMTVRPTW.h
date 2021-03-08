@@ -1,7 +1,5 @@
 #pragma once
-#include"BP.h"
-
-enum class Status { Infeasible, Feasible, Optimal };
+#include"BC.h"
 
 class Parameter_OPRE_2019_1874 {
 public:
@@ -12,7 +10,7 @@ public:
 
 class Solution_OPRE_2019_1874 {
 public:
-	Status status;
+	OptimalityStatus status;
 	double objective;
 	vector<Label_TimePath> routes;
 };

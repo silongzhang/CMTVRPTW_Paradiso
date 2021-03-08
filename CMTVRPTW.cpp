@@ -3,16 +3,16 @@
 
 Solution_OPRE_2019_1874 Framework_OPRE_2019_1874::solve(const Parameter_OPRE_2019_1874& parameter) {
 	Solution_OPRE_2019_1874 solution;
-	solution.status = Status::Infeasible;
+	solution.status = OptimalityStatus::Infeasible;
 	solution.objective = InfinityPos;
 	try {
 		clock_t last;
-		for (gapGuess = parameter.gapInit; solution.status != Status::Optimal; gapGuess += parameter.gapIncre) {
+		for (gapGuess = parameter.gapInit; solution.status != OptimalityStatus::Optimal; gapGuess += parameter.gapIncre) {
 			last = clock();
 			cout << "**************************************" << endl;
 			Solution_VRPTW_CG result_VRPTW_CG_LB = lbAtCGRootNodeVRPTW(parameter.input_VRPTW);
 			LB_1 = result_VRPTW_CG_LB.getCost();
-			UB_Guess = solution.status == Status::Feasible ? solution.objective : (1 + gapGuess) * LB_1;
+			UB_Guess = solution.status == OptimalityStatus::Feasible ? solution.objective : (1 + gapGuess) * LB_1;
 			cout << "Time: " << numToStr(runTime(last)) << '\t' << "Lower Bound 1: " << LB_1 << endl;
 
 			cout << endl << "**************************************" << endl;

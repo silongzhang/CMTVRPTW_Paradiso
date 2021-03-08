@@ -31,6 +31,8 @@ typedef IloArray<IloIntVarArray> IloIntVarArray2;
 typedef IloArray<IloBoolVarArray> IloBoolVarArray2;
 typedef IloArray<IloBoolVarArray2> IloBoolVarArray3;
 
+enum class OptimalityStatus { Infeasible, Feasible, Optimal };
+
 
 void printErrorAndExit(const string &str, const exception &exc);
 double runTime(const clock_t &start);
