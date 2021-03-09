@@ -136,6 +136,47 @@ ILOUSERCUTCALLBACK3(TripletUserCut, const Parameter_BC&, parameter, IloBoolVarAr
 }
 
 
+ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_BC&, parameter, IloBoolVarArray, X, Solution_BC&, solution) {
+	try {
+		// Check whether X is an integer vector.
+		for (int i = 0; i < X.getSize(); ++i) {
+			if (!equalToReal(getValue(X[i]), 0, PPM) && !equalToReal(getValue(X[i]), 1, PPM)) throw exception();
+		}
+
+		// Get selected structures.
+		vector<int> selected;
+		for (int i = 0; i < X.getSize(); ++i) {
+			if (equalToReal(getValue(X[i]), 1, PPM)) {
+				selected.push_back(i);
+			}
+		}
+
+		// Solve the TOPTW determined by selected structures.
+
+		// Add lazy constraints.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("CoexistLazyConstraint", exc);
+	}
+}
+
+
 
 
 
