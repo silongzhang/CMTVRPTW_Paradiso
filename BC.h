@@ -5,8 +5,6 @@ class Parameter_BC {
 public:
 	Data_Input_VRPTW input_VRPTW;
 	vector<Label_TimePath> columnPool;
-
-	bool allowPrintLog;
 };
 
 class Solution_BC {
@@ -24,4 +22,5 @@ void setObjective(const vector<Label_TimePath>& structures, IloModel model, IloB
 void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_TimePath>& structures, IloModel model, IloBoolVarArray x);
 Data_Input_VRPTW constructDataVRPTW(const Parameter_BC& parameter, const vector<Label_TimePath>& selectedStructures);
 vector<Label_TimePath> getSolutionBCAlgorithm(const Parameter_BC& parameter, const IloCplex& cplex, const IloBoolVarArray& X);
+Solution_BC BCAlgorithm(const Parameter_BC& parameter);
 

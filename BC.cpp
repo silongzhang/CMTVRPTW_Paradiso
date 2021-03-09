@@ -260,7 +260,7 @@ vector<Label_TimePath> getSolutionBCAlgorithm(const Parameter_BC& parameter, con
 }
 
 
-Solution_BC BCAlgorithm(const Parameter_BC& parameter, ostream& output) {
+Solution_BC BCAlgorithm(const Parameter_BC& parameter) {
 	Solution_BC solution;
 
 	IloEnv env;
