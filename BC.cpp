@@ -37,6 +37,78 @@ void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_T
 }
 
 
+ILOUSERCUTCALLBACK2(TimeUserCut, Parameter_BC, parameter, IloBoolVarArray, x) {
+	try {
+		// Get positive structures.
+		vector<int> positive;
+		for (int i = 0; i < x.getSize(); ++i) {
+			if (greaterThanReal(getValue(x[i]), 0, PPM)) {
+				positive.push_back(i);
+			}
+		}
+
+		// Get the set of latest departure times.
+		set<double, timeSortCriterion> tails;
+		for (const auto s : positive) {
+			auto tm = parameter.columnPool[s].getTimeAttribute().getLatestDeparture();
+			if (tails.find(tm) == tails.end()) {
+				tails.insert(tm);
+			}
+		}
+
+		// Get the set of times where RSFC constraints are violated.
+		set<double, timeSortCriterion> times;
+		auto env = getEnv();
+		for (const auto tm : tails) {
+			IloExpr expr(env);
+			for (const auto s : positive) {
+				if (parameter.columnPool[s].strongActive(tm)) {
+					expr += x[s];
+				}
+			}
+			if (greaterThanReal(getValue(expr), parameter.input_VRPTW.MaxNumVehicles, PPM)) {
+				times.insert(tm);
+			}
+			expr.end();
+		}
+
+		// Add RSFC constraints.
+		for (const auto t : times) {
+			IloExpr expr(env);
+			for (int s = 0; s < parameter.columnPool.size(); ++s) {
+				if (parameter.columnPool[s].strongActive(t)) {
+					expr += x[s];
+				}
+			}
+			add(expr <= parameter.input_VRPTW.MaxNumVehicles);
+			expr.end();
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("TimeUserCut", exc);
+	}
+}
+
+
+ILOUSERCUTCALLBACK2(TripletUserCut, Parameter_BC, parameter, IloBoolVarArray, x) {
+	try {
+
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("TripletUserCut", exc);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
 Solution_BC BCAlgorithm(const Parameter_BC& parameter, ostream& output) {
 	Solution_BC solution;
 	solution.status = OptimalityStatus::Infeasible;
