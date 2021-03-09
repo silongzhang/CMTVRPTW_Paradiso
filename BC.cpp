@@ -37,7 +37,7 @@ void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_T
 }
 
 
-ILOUSERCUTCALLBACK2(TimeUserCut, Parameter_BC, parameter, IloBoolVarArray, x) {
+ILOUSERCUTCALLBACK3(TimeUserCut, const Parameter_BC&, parameter, IloBoolVarArray, x, Solution_BC&, solution) {
 	try {
 		// Get positive structures.
 		vector<int> positive;
@@ -74,6 +74,8 @@ ILOUSERCUTCALLBACK2(TimeUserCut, Parameter_BC, parameter, IloBoolVarArray, x) {
 
 		// Add RSFC constraints.
 		for (const auto t : times) {
+			solution.timeSet.insert(t);
+
 			IloExpr expr(env);
 			for (int s = 0; s < parameter.columnPool.size(); ++s) {
 				if (parameter.columnPool[s].strongActive(t)) {
@@ -90,14 +92,51 @@ ILOUSERCUTCALLBACK2(TimeUserCut, Parameter_BC, parameter, IloBoolVarArray, x) {
 }
 
 
-ILOUSERCUTCALLBACK2(TripletUserCut, Parameter_BC, parameter, IloBoolVarArray, x) {
+ILOUSERCUTCALLBACK3(TripletUserCut, const Parameter_BC&, parameter, IloBoolVarArray, x, Solution_BC&, solution) {
 	try {
+		// Get positive structures.
+		vector<int> positive;
+		for (int i = 0; i < x.getSize(); ++i) {
+			if (greaterThanReal(getValue(x[i]), 0, PPM)) {
+				positive.push_back(i);
+			}
+		}
 
+		// Get the set of triplets where SR constraints are violated.
+		set<tuple<int, int, int>> existing, triplets;
+		for (const auto s : positive) {
+			for (const auto& tp : parameter.columnPool[s].getTuples(1, parameter.input_VRPTW.NumVertices)) {
+				if (existing.find(tp) == existing.end()) {
+					existing.insert(tp);
+				}
+				else {
+					triplets.insert(tp);
+				}
+			}
+		}
+
+		// Add SR constraints.
+		auto env = getEnv();
+		for (const auto& triplet : triplets) {
+			solution.tripletSet.insert(triplet);
+
+			IloExpr expr(env);
+			for (int s = 0; s < parameter.columnPool.size(); ++s) {
+				if (parameter.columnPool[s].atLeastTwo(triplet)) {
+					expr += x[s];
+				}
+			}
+			add(expr <= 1);
+			expr.end();
+		}
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("TripletUserCut", exc);
 	}
 }
+
+
+
 
 
 
@@ -128,6 +167,10 @@ Solution_BC BCAlgorithm(const Parameter_BC& parameter, ostream& output) {
 
 		// Solve the model.
 		IloCplex cplex(model);
+		cplex.use(TimeUserCut(env, parameter, X, solution));
+		cplex.use(TripletUserCut(env, parameter, X, solution));
+
+
 
 		// Add user cuts and lazy constraints.
 
