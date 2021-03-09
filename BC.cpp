@@ -136,6 +136,68 @@ ILOUSERCUTCALLBACK3(TripletUserCut, const Parameter_BC&, parameter, IloBoolVarAr
 }
 
 
+Data_Input_VRPTW constructDataVRPTW(const Parameter_BC& parameter, const vector<Label_TimePath>& selectedStructures) {
+	Data_Input_VRPTW inputVRPTW;
+	try {
+		inputVRPTW.NumVertices = selectedStructures.size() + 1;
+		inputVRPTW.clearAndResize();
+
+		inputVRPTW.name = "Constructed TOPTW";
+		inputVRPTW.MaxNumVehicles = parameter.input_VRPTW.MaxNumVehicles;
+		inputVRPTW.capacity = InfinityPos;
+		inputVRPTW.constrainResource = { false,false,true };
+
+		for (int i = 0; i < inputVRPTW.NumVertices; ++i) {
+			inputVRPTW.QuantityWindow[i] = make_pair(0, InfinityPos);
+			inputVRPTW.DistanceWindow[i] = make_pair(0, InfinityPos);
+			for (int j = 0; j < inputVRPTW.NumVertices; ++j) {
+				inputVRPTW.Quantity[i][j] = 0;
+				inputVRPTW.Distance[i][j] = 0;
+			}
+		}
+
+		set<double> early, late;
+		for (int i = 1; i < inputVRPTW.NumVertices; ++i) {
+			inputVRPTW.TimeWindow[i].first = selectedStructures[i - 1].getTimeAttribute().getEarliestDeparture();
+			early.insert(inputVRPTW.TimeWindow[i].first);
+			inputVRPTW.TimeWindow[i].second = selectedStructures[i - 1].getTimeAttribute().getLatestDeparture();
+			late.insert(inputVRPTW.TimeWindow[i].second + selectedStructures[i - 1].getTimeAttribute().getDuration());
+		}
+		inputVRPTW.TimeWindow[0].first = *early.begin() - One;
+		inputVRPTW.TimeWindow[0].second = *prev(late.end()) + One;
+
+		for (int j = 1; j < inputVRPTW.NumVertices; ++j) {
+			inputVRPTW.Time[0][j] = 0;
+			inputVRPTW.RealCost[0][j] = 0;
+			inputVRPTW.ExistingArcs[0][j] = true;
+		}
+
+		for (int i = 1; i < inputVRPTW.NumVertices; ++i) {
+			for (int j = 0; j < inputVRPTW.NumVertices; ++j) {
+				double e_i = selectedStructures[i - 1].getTimeAttribute().getEarliestDeparture();
+				double d_i = selectedStructures[i - 1].getTimeAttribute().getDuration();
+				double l_j = selectedStructures[j - 1].getTimeAttribute().getLatestDeparture();
+				if (i != j && e_i + d_i <= l_j) {
+					inputVRPTW.Time[i][j] = d_i;
+					inputVRPTW.RealCost[i][j] = 1;
+					inputVRPTW.ExistingArcs[i][j] = true;
+				}
+				else {
+					inputVRPTW.Time[i][j] = InfinityPos;
+					inputVRPTW.RealCost[i][j] = 0;
+					inputVRPTW.ExistingArcs[i][j] = false;
+				}
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("constructDataVRPTW", exc);
+	}
+	inputVRPTW.preprocess();
+	return inputVRPTW;
+}
+
+
 ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_BC&, parameter, IloBoolVarArray, X, Solution_BC&, solution) {
 	try {
 		// Check whether X is an integer vector.
@@ -150,26 +212,31 @@ ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_BC&, parameter
 				selected.push_back(i);
 			}
 		}
+		vector<Label_TimePath> selectedStructures;
+		for (auto i : selected) {
+			selectedStructures.push_back(parameter.columnPool[i]);
+		}
 
-		// Solve the TOPTW determined by selected structures.
+		// Solve the TOPTW determined by selected structures.		
+		Data_Input_VRPTW input_TOPTW = constructDataVRPTW(parameter, selectedStructures);
+		Parameter_BP parameter_BP;
+		parameter_BP.weightLB = parameter_BP.weightDepth = 1;
+		parameter_BP.allowPrintLog = false;
+		BBNODE solTOPTW = BPAlgorithm(input_TOPTW, parameter_BP, cout);
+		if (!solTOPTW.solution.feasible || !solTOPTW.solution.integer) throw exception();
 
 		// Add lazy constraints.
+		double numCoexist = -solTOPTW.solution.objective;
+		if (greaterThanReal(selected.size(), numCoexist, PPM)) {
+			solution.SFCSet.push_back(make_pair(selected, numCoexist));
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+			IloExpr expr(getEnv());
+			for (auto i : selected) {
+				expr += X[i];
+			}
+			add(expr <= numCoexist);
+			expr.end();
+		}
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("CoexistLazyConstraint", exc);
@@ -177,27 +244,28 @@ ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_BC&, parameter
 }
 
 
-
-
-
-
-
-
-
-
-
-
+vector<Label_TimePath> getSolutionBCAlgorithm(const Parameter_BC& parameter, const IloCplex& cplex, const IloBoolVarArray& X) {
+	vector<Label_TimePath> selectedStructures;
+	try {
+		for (int i = 0; i < X.getSize(); ++i) {
+			if (equalToReal(cplex.getValue(X[i]), 1, PPM)) {
+				selectedStructures.push_back(parameter.columnPool[i]);
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("getSolutionBCAlgorithm", exc);
+	}
+	return selectedStructures;
+}
 
 
 Solution_BC BCAlgorithm(const Parameter_BC& parameter, ostream& output) {
 	Solution_BC solution;
-	solution.status = OptimalityStatus::Infeasible;
-	solution.objective = InfinityPos;
 
 	IloEnv env;
 	try {
-		string strLog = "Begin running the procedure titled BCAlgorithm.";
-		print(parameter.allowPrintLog, output, strLog);
+		cout << "Begin running the procedure titled BCAlgorithm." << endl;
 		clock_t start = clock();
 
 		// Define the model.
@@ -210,16 +278,29 @@ Solution_BC BCAlgorithm(const Parameter_BC& parameter, ostream& output) {
 		IloCplex cplex(model);
 		cplex.use(TimeUserCut(env, parameter, X, solution));
 		cplex.use(TripletUserCut(env, parameter, X, solution));
+		cplex.use(CoexistLazyConstraint(env, parameter, X, solution));
+		cplex.solve();
 
+		// Get the solution.
+		if (cplex.getCplexStatus() == IloCplex::CplexStatus::Infeasible) {
+			solution.status = OptimalityStatus::Infeasible;
+			solution.objective = InfinityPos;
+		}
+		else if (cplex.getCplexStatus() == IloCplex::CplexStatus::Optimal) {
+			solution.status = OptimalityStatus::Optimal;
+			solution.objective = cplex.getObjValue();
+			solution.routes = getSolutionBCAlgorithm(parameter, cplex, X);
+		}
+		else throw exception();
 
-
-		// Add user cuts and lazy constraints.
-
-
-
-
-		strLog = "The procedure titled BCAlgorithm is finished.";
-		print(parameter.allowPrintLog, output, strLog);
+		// Print information.
+		cout << "Time: " << runTime(start) << '\t' << "Status: " << cplex.getCplexStatus() << endl;
+		if (cplex.getCplexStatus() == IloCplex::CplexStatus::Optimal) {
+			cout << "Objective: " << cplex.getObjValue() << endl;
+		}
+		cout << "TimeUserCut: " << solution.timeSet.size() << '\t' << "TripletUserCut: " << solution.tripletSet.size() << '\t'
+			<< "CoexistLazyConstraint: " << solution.SFCSet.size() << endl;
+		cout << "The procedure titled BCAlgorithm is finished." << endl;
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("BCAlgorithm", exc);
