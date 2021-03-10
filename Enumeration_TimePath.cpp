@@ -28,6 +28,26 @@ bool Time_Attribute::dominate(const Time_Attribute& rhs) const {
 }
 
 
+bool Label_TimePath::hasVisitedArc(int tail, int head) const {
+	try {
+		if (hasVisited(tail) && hasVisited(head)) {
+			auto path = getPath();
+			auto pt = path.begin();
+			for (; pt != path.end() && *pt != tail; ++pt);
+			if (pt == path.end()) throw exception();
+			++pt;
+			if (pt != path.end() && *pt == head) {
+				return true;
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("Label_TimePath::hasVisitedArc", exc);
+	}
+	return false;
+}
+
+
 bool Label_TimePath::strongActive(const double t) const {
 	return lessThanReal(timeAttribute.getLatestDeparture() - 2 * PPM, t, PPM) &&
 		lessThanReal(t, timeAttribute.getEarliestDeparture() + timeAttribute.getDuration(), PPM);

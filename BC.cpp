@@ -1,7 +1,7 @@
 #include"BC.h"
 
 
-void setObjective(const vector<Label_TimePath>& structures, IloModel model, IloBoolVarArray x) {
+void setObjectiveBC(const vector<Label_TimePath>& structures, IloModel model, TypeX x) {
 	try {
 		auto env = model.getEnv();
 		IloExpr expr(env);
@@ -17,7 +17,7 @@ void setObjective(const vector<Label_TimePath>& structures, IloModel model, IloB
 }
 
 
-void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_TimePath>& structures, IloModel model, IloBoolVarArray x) {
+void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_TimePath>& structures, IloModel model, TypeX x) {
 	try {
 		auto env = model.getEnv();
 		for (int i = 1; i < input.NumVertices; ++i) {
@@ -37,7 +37,7 @@ void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_T
 }
 
 
-ILOUSERCUTCALLBACK3(TimeUserCut, const Parameter_BC&, parameter, IloBoolVarArray, x, Solution_BC&, solution) {
+ILOUSERCUTCALLBACK3(TimeUserCut, const Parameter_BC&, parameter, TypeX, x, Solution_BC&, solution) {
 	try {
 		// Get positive structures.
 		vector<int> positive;
@@ -92,7 +92,7 @@ ILOUSERCUTCALLBACK3(TimeUserCut, const Parameter_BC&, parameter, IloBoolVarArray
 }
 
 
-ILOUSERCUTCALLBACK3(TripletUserCut, const Parameter_BC&, parameter, IloBoolVarArray, x, Solution_BC&, solution) {
+ILOUSERCUTCALLBACK3(TripletUserCut, const Parameter_BC&, parameter, TypeX, x, Solution_BC&, solution) {
 	try {
 		// Get positive structures.
 		vector<int> positive;
@@ -198,7 +198,7 @@ Data_Input_VRPTW constructDataVRPTW(const Parameter_BC& parameter, const vector<
 }
 
 
-ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_BC&, parameter, IloBoolVarArray, X, Solution_BC&, solution) {
+ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_BC&, parameter, TypeX, X, Solution_BC&, solution) {
 	try {
 		// Check whether X is an integer vector.
 		for (int i = 0; i < X.getSize(); ++i) {
@@ -244,7 +244,7 @@ ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_BC&, parameter
 }
 
 
-vector<Label_TimePath> getSolutionBCAlgorithm(const Parameter_BC& parameter, const IloCplex& cplex, const IloBoolVarArray& X) {
+vector<Label_TimePath> getSolutionBCAlgorithm(const Parameter_BC& parameter, const IloCplex& cplex, const TypeX& X) {
 	vector<Label_TimePath> selectedStructures;
 	try {
 		for (int i = 0; i < X.getSize(); ++i) {
@@ -260,8 +260,68 @@ vector<Label_TimePath> getSolutionBCAlgorithm(const Parameter_BC& parameter, con
 }
 
 
+ILOBRANCHCALLBACK3(BranchCallBack, const Parameter_BC&, parameter, TypeX, X, Solution_BC&, solution) {
+	try {
+		if (isIntegerFeasible()) prune();
+
+		// Get positive structures.
+		vector<int> positive;
+		for (int i = 0; i < X.getSize(); ++i) {
+			if (greaterThanReal(getValue(X[i]), 0, PPM)) {
+				positive.push_back(i);
+			}
+		}
+
+		// Get the accumulative number of structures which traverse the arc.
+		vector<vector<double>> traversal(parameter.input_VRPTW.NumVertices, vector<double>(parameter.input_VRPTW.NumVertices, 0));
+		for (auto i : positive) {
+			auto path = parameter.columnPool[i].getPath();
+			auto pre = path.begin();
+			for (auto suc = pre + 1; suc != path.end(); ++pre, ++suc) {
+				traversal[*pre][*suc] += getValue(X[i]);
+			}
+		}
+
+		// Get the arc on which the branch will be conducted.
+		int tail = -1, head = -1;
+		double midDist = InfinityPos;
+		for (int i = 0; i < traversal.size(); ++i) {
+			for (int j = 0; j < traversal[i].size(); ++j) {
+				if (greaterThanReal(traversal[i][j], 0, PPM) && greaterThanReal(midDist, abs(traversal[i][j] - 0.5), PPM)) {
+					tail = i, head = j;
+					midDist = abs(traversal[i][j] - 0.5);
+				}
+			}
+		}
+		if (tail == -1) throw exception();
+
+		// Get the set of structures which traverse the arc.
+		vector<int> visitTheArc;
+		for (int i = 0; i < parameter.columnPool.size(); ++i) {
+			if (parameter.columnPool[i].hasVisitedArc(tail, head)) {
+				visitTheArc.push_back(i);
+			}
+		}
+
+		// Branch.
+		IloExpr expr(getEnv());
+		for (const auto i : visitTheArc) {
+			expr += X[i];
+		}
+		makeBranch(expr == 0, getObjValue());
+		makeBranch(expr == 1, getObjValue());
+		++solution.numBranch;
+		expr.end();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("branchCallBack", exc);
+	}
+}
+
+
 Solution_BC BCAlgorithm(const Parameter_BC& parameter) {
 	Solution_BC solution;
+	solution.numBranch = 0;
 
 	IloEnv env;
 	try {
@@ -270,8 +330,8 @@ Solution_BC BCAlgorithm(const Parameter_BC& parameter) {
 
 		// Define the model.
 		IloModel model(env);
-		IloBoolVarArray X(env, parameter.columnPool.size());
-		setObjective(parameter.columnPool, model, X);
+		TypeX X(env, parameter.columnPool.size());
+		setObjectiveBC(parameter.columnPool, model, X);
 		setConstraintsPartition(parameter.input_VRPTW, parameter.columnPool, model, X);
 
 		// Solve the model.
@@ -279,6 +339,7 @@ Solution_BC BCAlgorithm(const Parameter_BC& parameter) {
 		cplex.use(TimeUserCut(env, parameter, X, solution));
 		cplex.use(TripletUserCut(env, parameter, X, solution));
 		cplex.use(CoexistLazyConstraint(env, parameter, X, solution));
+		cplex.use(BranchCallBack(env, parameter, X, solution));
 		cplex.solve();
 
 		// Get the solution.
@@ -299,7 +360,7 @@ Solution_BC BCAlgorithm(const Parameter_BC& parameter) {
 			cout << "Objective: " << cplex.getObjValue() << endl;
 		}
 		cout << "TimeUserCut: " << solution.timeSet.size() << '\t' << "TripletUserCut: " << solution.tripletSet.size() << '\t'
-			<< "CoexistLazyConstraint: " << solution.SFCSet.size() << endl;
+			<< "CoexistLazyConstraint: " << solution.SFCSet.size() << '\t' << "BranchCallBack: " << solution.numBranch << endl;
 		cout << "The procedure titled BCAlgorithm is finished." << endl;
 	}
 	catch (const exception& exc) {
