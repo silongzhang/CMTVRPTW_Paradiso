@@ -34,16 +34,16 @@ Solution_OPRE_2019_1874 Framework_OPRE_2019_1874::solve(const Parameter_OPRE_201
 
 			last = clock();
 			cout << endl << "**************************************" << endl;
-			Parameter_BC parameter_BC;
-			parameter_BC.input_VRPTW = parameter.input_VRPTW;
-			parameter_BC.columnPool = resultReduction;
-			Solution_BC resultBC = BCAlgorithm(parameter_BC);
+			Parameter_CuttingPlane parameter_CuttingPlane;
+			parameter_CuttingPlane.input_VRPTW = parameter.input_VRPTW;
+			parameter_CuttingPlane.columnPool = resultReduction;
+			Solution_CuttingPlane resultCuttingPlane = CuttingPlaneAlgorithm(parameter_CuttingPlane);
 			cout << "######################################" << endl << endl;
 
-			if (resultBC.status == OptimalityStatus::Optimal) {
-				solution.objective = resultBC.objective;
-				solution.routes = resultBC.routes;
-				solution.status = greaterThanReal(resultBC.objective, UB_Guess, PPM) ? OptimalityStatus::Feasible : OptimalityStatus::Optimal;
+			if (resultCuttingPlane.status == OptimalityStatus::Optimal) {
+				solution.objective = resultCuttingPlane.objective;
+				solution.routes = resultCuttingPlane.routes;
+				solution.status = greaterThanReal(resultCuttingPlane.objective, UB_Guess, PPM) ? OptimalityStatus::Feasible : OptimalityStatus::Optimal;
 			}
 		}
 	}

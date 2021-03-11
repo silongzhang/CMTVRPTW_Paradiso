@@ -163,8 +163,7 @@ BBNODE BPAlgorithm(const Data_Input_VRPTW& inputVRPTW, const Parameter_BP& param
 				+ "prunedInteger: " + numToStr(info.prunedInteger) + "\t" + "prunedBound: " + numToStr(info.prunedBound) + "\t"
 				+ "branched: " + numToStr(info.branched);
 			print(parameter.allowPrintLog, output, strLog);
-			printBranchParameter(worker);
-
+			if (parameter.allowPrintLog) printBranchParameter(worker);
 			worker.solve(output);
 
 			if (!worker.solution.feasible) {

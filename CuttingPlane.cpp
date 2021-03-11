@@ -1,7 +1,7 @@
-#include"BC.h"
+#include"CuttingPlane.h"
 
 
-void setObjectiveBC(const vector<Label_TimePath>& structures, IloModel model, TypeX x) {
+void setObjectiveCuttingPlane(const vector<Label_TimePath>& structures, IloModel model, TypeX x) {
 	try {
 		auto env = model.getEnv();
 		IloExpr expr(env);
@@ -37,7 +37,7 @@ void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_T
 }
 
 
-ILOUSERCUTCALLBACK3(TimeUserCut, const Parameter_BC&, parameter, TypeX, x, Solution_BC&, solution) {
+ILOUSERCUTCALLBACK3(TimeUserCut, const Parameter_CuttingPlane&, parameter, TypeX, x, Solution_CuttingPlane&, solution) {
 	try {
 		// Get positive structures.
 		vector<int> positive;
@@ -92,7 +92,7 @@ ILOUSERCUTCALLBACK3(TimeUserCut, const Parameter_BC&, parameter, TypeX, x, Solut
 }
 
 
-ILOUSERCUTCALLBACK3(TripletUserCut, const Parameter_BC&, parameter, TypeX, x, Solution_BC&, solution) {
+ILOUSERCUTCALLBACK3(TripletUserCut, const Parameter_CuttingPlane&, parameter, TypeX, x, Solution_CuttingPlane&, solution) {
 	try {
 		// Get positive structures.
 		vector<int> positive;
@@ -136,7 +136,7 @@ ILOUSERCUTCALLBACK3(TripletUserCut, const Parameter_BC&, parameter, TypeX, x, So
 }
 
 
-Data_Input_VRPTW constructDataVRPTW(const Parameter_BC& parameter, const vector<Label_TimePath>& selectedStructures) {
+Data_Input_VRPTW constructDataVRPTW(const Parameter_CuttingPlane& parameter, const vector<Label_TimePath>& selectedStructures) {
 	Data_Input_VRPTW inputVRPTW;
 	try {
 		inputVRPTW.NumVertices = selectedStructures.size() + 1;
@@ -198,7 +198,7 @@ Data_Input_VRPTW constructDataVRPTW(const Parameter_BC& parameter, const vector<
 }
 
 
-ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_BC&, parameter, TypeX, X, Solution_BC&, solution) {
+ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_CuttingPlane&, parameter, TypeX, X, Solution_CuttingPlane&, solution) {
 	try {
 		// Check whether X is an integer vector.
 		for (int i = 0; i < X.getSize(); ++i) {
@@ -244,7 +244,7 @@ ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_BC&, parameter
 }
 
 
-vector<Label_TimePath> getSolutionBCAlgorithm(const Parameter_BC& parameter, const IloCplex& cplex, const TypeX& X) {
+vector<Label_TimePath> getSolutionCuttingPlaneAlgorithm(const Parameter_CuttingPlane& parameter, const IloCplex& cplex, const TypeX& X) {
 	vector<Label_TimePath> selectedStructures;
 	try {
 		for (int i = 0; i < X.getSize(); ++i) {
@@ -260,7 +260,7 @@ vector<Label_TimePath> getSolutionBCAlgorithm(const Parameter_BC& parameter, con
 }
 
 
-ILOBRANCHCALLBACK3(BranchCallBack, const Parameter_BC&, parameter, TypeX, X, Solution_BC&, solution) {
+ILOBRANCHCALLBACK3(BranchCallBack, const Parameter_CuttingPlane&, parameter, TypeX, X, Solution_CuttingPlane&, solution) {
 	try {
 		if (isIntegerFeasible()) prune();
 
@@ -319,19 +319,19 @@ ILOBRANCHCALLBACK3(BranchCallBack, const Parameter_BC&, parameter, TypeX, X, Sol
 }
 
 
-Solution_BC BCAlgorithm(const Parameter_BC& parameter) {
-	Solution_BC solution;
+Solution_CuttingPlane CuttingPlaneAlgorithm(const Parameter_CuttingPlane& parameter) {
+	Solution_CuttingPlane solution;
 	solution.numBranch = 0;
 
 	IloEnv env;
 	try {
-		cout << "Begin running the procedure titled BCAlgorithm." << endl;
+		cout << "Begin running the procedure titled CuttingPlaneAlgorithm." << endl;
 		clock_t start = clock();
 
 		// Define the model.
 		IloModel model(env);
 		TypeX X(env, parameter.columnPool.size());
-		setObjectiveBC(parameter.columnPool, model, X);
+		setObjectiveCuttingPlane(parameter.columnPool, model, X);
 		setConstraintsPartition(parameter.input_VRPTW, parameter.columnPool, model, X);
 
 		// Solve the model.
@@ -350,7 +350,7 @@ Solution_BC BCAlgorithm(const Parameter_BC& parameter) {
 		else if (cplex.getCplexStatus() == IloCplex::CplexStatus::Optimal) {
 			solution.status = OptimalityStatus::Optimal;
 			solution.objective = cplex.getObjValue();
-			solution.routes = getSolutionBCAlgorithm(parameter, cplex, X);
+			solution.routes = getSolutionCuttingPlaneAlgorithm(parameter, cplex, X);
 		}
 		else throw exception();
 
@@ -361,10 +361,10 @@ Solution_BC BCAlgorithm(const Parameter_BC& parameter) {
 		}
 		cout << "TimeUserCut: " << solution.timeSet.size() << '\t' << "TripletUserCut: " << solution.tripletSet.size() << '\t'
 			<< "CoexistLazyConstraint: " << solution.SFCSet.size() << '\t' << "BranchCallBack: " << solution.numBranch << endl;
-		cout << "The procedure titled BCAlgorithm is finished." << endl;
+		cout << "The procedure titled CuttingPlaneAlgorithm is finished." << endl;
 	}
 	catch (const exception& exc) {
-		printErrorAndExit("BCAlgorithm", exc);
+		printErrorAndExit("CuttingPlaneAlgorithm", exc);
 	}
 	env.end();
 
