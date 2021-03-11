@@ -1,6 +1,7 @@
 #pragma once
 
 #include"BP.h"
+#include"CuttingPlane.h"
 
 class Parameter_VRPTW_BC {
 public:
@@ -32,8 +33,9 @@ public:
 	bool feasible;									// Whether the LP formulation corresponding to this node is feasible.
 	bool integer;									// Whether the optimal solution corresponding to this node is an integer solution.
 	double objective;								// The optimal objective value corresponding to this node.
-	double UB_Integer_Value;						// The best (smallest) upperbound found so far.
-	vector<Label_TimePath> UB_Integer_Solution;		// The best integer solution found so far.
+	double UB_Integer_Value;						// The upperbound.
+	vector<Label_TimePath> UB_Integer_Solution;		// The integer solution.
+	vector<int> Indices_UB_Integer_Solution;		// Indices of routes of the integer solution.
 
 	vector<vector<double>> visitArcs;				// 0 <= visitArcs[i][j] <=1, the times at which the arc (i, j) has been visited.
 };
@@ -60,4 +62,6 @@ void addConstraintsSR_VRPTW_BC(const Parameter_VRPTW_BC& parameter, IloModel mod
 	const set<tuple<int, int, int>>& additionalTriplets);
 void addConstraintsSFC_VRPTW_BC(IloModel model, IloNumVarArray X, const vector<pair<vector<int>, double>>& SFCSet);
 void addConstraintsBranchOnArcs_VRPTW_BC(IloModel model, IloNumVarArray X, const vector<pair<vector<int>, bool>>& branchOnArcs);
+NODE_VRPTW_BC initBCNode(const Parameter_VRPTW_BC& parameter);
+double maxNumCoexist(const int maxNumVehicles, const vector<Label_TimePath>& selectedStructures);
 

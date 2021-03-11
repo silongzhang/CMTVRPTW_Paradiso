@@ -136,14 +136,14 @@ ILOUSERCUTCALLBACK3(TripletUserCut, const Parameter_CuttingPlane&, parameter, Ty
 }
 
 
-Data_Input_VRPTW constructDataVRPTW(const Parameter_CuttingPlane& parameter, const vector<Label_TimePath>& selectedStructures) {
+Data_Input_VRPTW constructDataVRPTW(const int maxNumVehicles, const vector<Label_TimePath>& selectedStructures) {
 	Data_Input_VRPTW inputVRPTW;
 	try {
 		inputVRPTW.NumVertices = selectedStructures.size() + 1;
 		inputVRPTW.clearAndResize();
 
 		inputVRPTW.name = "Constructed TOPTW";
-		inputVRPTW.MaxNumVehicles = parameter.input_VRPTW.MaxNumVehicles;
+		inputVRPTW.MaxNumVehicles = maxNumVehicles;
 		inputVRPTW.capacity = InfinityPos;
 		inputVRPTW.constrainResource = { false,false,true };
 
@@ -218,7 +218,7 @@ ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_CuttingPlane&,
 		}
 
 		// Solve the TOPTW determined by selected structures.		
-		Data_Input_VRPTW input_TOPTW = constructDataVRPTW(parameter, selectedStructures);
+		Data_Input_VRPTW input_TOPTW = constructDataVRPTW(parameter.input_VRPTW.MaxNumVehicles, selectedStructures);
 		Parameter_BP parameter_BP;
 		parameter_BP.weightLB = parameter_BP.weightDepth = 1;
 		parameter_BP.allowPrintLog = false;

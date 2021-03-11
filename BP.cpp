@@ -166,11 +166,11 @@ BBNODE BPAlgorithm(const Data_Input_VRPTW& inputVRPTW, const Parameter_BP& param
 			if (parameter.allowPrintLog) printBranchParameter(worker);
 			worker.solve(output);
 
+			// Whether the LP corresponding to this node is Linearly feasible.
 			if (!worker.solution.feasible) {
 				++info.prunedInfeasibility;
 			}
 			else {
-				// Whether the LP corresponding to this node is Linearly feasible.
 				strLog = "Objective: " + numToStr(worker.solution.objective);
 				print(parameter.allowPrintLog, output, strLog);
 
@@ -181,7 +181,7 @@ BBNODE BPAlgorithm(const Data_Input_VRPTW& inputVRPTW, const Parameter_BP& param
 						bestNode = worker;
 					}
 				}
-				else if (!lessThanReal(worker.solution.objective, worker.solution.UB_Integer_Value, PPM)) {
+				else if (!lessThanReal(worker.solution.objective, bestNode.solution.UB_Integer_Value, PPM)) {
 					++info.prunedBound;
 				}
 				else {

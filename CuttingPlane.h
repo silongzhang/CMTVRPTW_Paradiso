@@ -23,7 +23,7 @@ public:
 
 void setObjectiveCuttingPlane(const vector<Label_TimePath>& structures, IloModel model, TypeX x);
 void setConstraintsPartition(const Data_Input_VRPTW& input, const vector<Label_TimePath>& structures, IloModel model, TypeX x);
-Data_Input_VRPTW constructDataVRPTW(const Parameter_CuttingPlane& parameter, const vector<Label_TimePath>& selectedStructures);
+Data_Input_VRPTW constructDataVRPTW(const int maxNumVehicles, const vector<Label_TimePath>& selectedStructures);
 vector<Label_TimePath> getSolutionCuttingPlaneAlgorithm(const Parameter_CuttingPlane& parameter, const IloCplex& cplex, const TypeX& X);
 Solution_CuttingPlane CuttingPlaneAlgorithm(const Parameter_CuttingPlane& parameter);
 
