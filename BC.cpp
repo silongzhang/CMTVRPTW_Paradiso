@@ -104,10 +104,57 @@ void addConstraintsBranchOnArcs_VRPTW_BC(IloModel model, IloNumVarArray X, const
 }
 
 
+void NODE_VRPTW_BC::getIntegerSolution(const Parameter_VRPTW_BC& parameter, const IloCplex& cplex, const IloNumVarArray& X) {
+	try {
+		solution.UB_Integer_Solution.clear();
+		for (int i = 0; i < X.getSize(); ++i) {
+			if (equalToReal(cplex.getValue(X[i]), 1, PPM)) {
+				solution.UB_Integer_Solution.push_back(parameter.columnPool[i]);
+			}
+			else if (!equalToReal(cplex.getValue(X[i]), 0, PPM)) throw exception();
+		}
+
+		solution.UB_Integer_Value = 0;
+		for (const auto& elem : solution.UB_Integer_Solution) {
+			solution.UB_Integer_Value += elem.getRealCost();
+		}
+		if (!equalToReal(solution.UB_Integer_Value, cplex.getObjValue(), PPM)) throw exception();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("NODE_VRPTW_BC::getIntegerSolution", exc);
+	}
+}
+
+
+void NODE_VRPTW_BC::getVisitArcs(const Parameter_VRPTW_BC& parameter, const IloCplex& cplex, const IloNumVarArray& X) {
+	try {
+		vector<int> basicVariables;
+		for (int i = 0; i < X.getSize(); ++i) {
+			if (greaterThanReal(cplex.getValue(X[i]), 0, PPM)) {
+				basicVariables.push_back(i);
+			}
+		}
+
+		const int N = parameter.input_VRPTW.NumVertices;
+		solution.visitArcs = vector<vector<double>>(N, vector<double>(N, 0));
+		for (const auto& i : basicVariables) {
+			const auto path = parameter.columnPool[i].getPath();
+			auto pre = path.begin();
+			for (auto suc = pre + 1; suc != path.end(); ++pre, ++suc) {
+				solution.visitArcs[*pre][*suc] += cplex.getValue(X[i]);
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("NODE_VRPTW_BC::getVisitArcs", exc);
+	}
+}
+
+
 void NODE_VRPTW_BC::solve(const Parameter_VRPTW_BC& parameter, ostream& output) {
 	IloEnv env;
 	try {
-		solution.explored = solution.feasible = solution.integer = false;
+		solution.feasible = solution.integer = false;
 		solution.objective = InfinityPos;
 
 		// Define the model.
@@ -122,11 +169,32 @@ void NODE_VRPTW_BC::solve(const Parameter_VRPTW_BC& parameter, ostream& output) 
 
 		// Solve the model.
 		IloCplex cplex(model);
+		for (; true;) {
+			if (!cplex.solve()) {
+				solution.feasible = false;
+				return;
+			}
 
+			auto additionalTimes = detectAdditionalTimes(parameter.input_VRPTW, parameter.columnPool, input.timeSet, cplex, X);
+			for (const auto& elem : additionalTimes) input.timeSet.insert(elem);
+			auto additionalTriplets = detectAdditionalTriplets(parameter.input_VRPTW, parameter.columnPool, input.tripletSet, cplex, X);
+			for (const auto& elem : additionalTriplets) input.tripletSet.insert(elem);
+			if (additionalTimes.empty() && additionalTriplets.empty()) {
+				break;
+			}
+			else {
+				addConstraintsTime_VRPTW_BC(parameter, model, X, additionalTimes);
+				addConstraintsSR_VRPTW_BC(parameter, model, X, additionalTriplets);
+			}
+		}
 
-
-
-
+		// Get the solution.
+		if (cplex.getCplexStatus() != IloCplex::Optimal) throw exception();
+		solution.feasible = true;
+		solution.objective = cplex.getObjValue();
+		solution.integer = isBool(cplex, X);
+		if (solution.integer) getIntegerSolution(parameter, cplex, X);
+		getVisitArcs(parameter, cplex, X);
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("NODE_VRPTW_BC::solve", exc);

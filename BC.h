@@ -29,12 +29,13 @@ public:
 
 class Solution_VRPTW_BC {
 public:
-	bool explored;									// Whether this node has been explored.
 	bool feasible;									// Whether the LP formulation corresponding to this node is feasible.
 	bool integer;									// Whether the optimal solution corresponding to this node is an integer solution.
 	double objective;								// The optimal objective value corresponding to this node.
 	double UB_Integer_Value;						// The best (smallest) upperbound found so far.
 	vector<Label_TimePath> UB_Integer_Solution;		// The best integer solution found so far.
+
+	vector<vector<double>> visitArcs;				// 0 <= visitArcs[i][j] <=1, the times at which the arc (i, j) has been visited.
 };
 
 class NODE_VRPTW_BC {
@@ -48,6 +49,8 @@ public:
 
 	void solve(const Parameter_VRPTW_BC& parameter, ostream& output);
 	void setPriority(double weightLB, double weightDepth) { priority = weightLB * solution.objective + weightDepth * depth; }
+	void getIntegerSolution(const Parameter_VRPTW_BC& parameter, const IloCplex& cplex, const IloNumVarArray& X);
+	void getVisitArcs(const Parameter_VRPTW_BC& parameter, const IloCplex& cplex, const IloNumVarArray& X);
 };
 
 void setConstraintsPartition_VRPTW_BC(const Data_Input_VRPTW& input, const vector<Label_TimePath>& structures, IloModel model, IloNumVarArray X);
