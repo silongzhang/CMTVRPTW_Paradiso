@@ -210,6 +210,7 @@ NODE_VRPTW_BC initBCNode(const Parameter_VRPTW_BC& parameter) {
 	NODE_VRPTW_BC node;
 	try {
 		node.depth = 1;
+		node.solution.feasible = node.solution.integer = false;
 		node.solution.UB_Integer_Value = InfinityPos;
 		node.solution.objective = node.solution.UB_Integer_Value - 1;
 		node.setPriority(parameter.weightLB, parameter.weightDepth);
