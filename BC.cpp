@@ -153,7 +153,7 @@ void NODE_VRPTW_BC::getVisitArcs(const Parameter_VRPTW_BC& parameter, const IloC
 }
 
 
-void NODE_VRPTW_BC::solve(const Parameter_VRPTW_BC& parameter, ostream& output) {
+void NODE_VRPTW_BC::solve(const Parameter_VRPTW_BC& parameter, ConstraintSet& constraints, ostream& output) {
 	IloEnv env;
 	try {
 		solution.feasible = solution.integer = false;
@@ -164,9 +164,9 @@ void NODE_VRPTW_BC::solve(const Parameter_VRPTW_BC& parameter, ostream& output) 
 		IloNumVarArray X(env, parameter.columnPool.size(), 0, 1);
 		setObjective(parameter.columnPool, model, X);
 		setConstraintsPartition_VRPTW_BC(parameter.input_VRPTW, parameter.columnPool, model, X);
-		addConstraintsTime_VRPTW_BC(parameter, model, X, input.timeSet);
-		addConstraintsSR_VRPTW_BC(parameter, model, X, input.tripletSet);
-		addConstraintsSFC_VRPTW_BC(model, X, input.SFCSet);
+		addConstraintsTime_VRPTW_BC(parameter, model, X,constraints.timeSet);
+		addConstraintsSR_VRPTW_BC(parameter, model, X, constraints.tripletSet);
+		addConstraintsSFC_VRPTW_BC(model, X, constraints.SFCSet);
 		addConstraintsBranchOnArcs_VRPTW_BC(model, X, input.branchOnArcs);
 
 		// Solve the model.
@@ -177,10 +177,10 @@ void NODE_VRPTW_BC::solve(const Parameter_VRPTW_BC& parameter, ostream& output) 
 				return;
 			}
 
-			auto additionalTimes = detectAdditionalTimes(parameter.input_VRPTW, parameter.columnPool, input.timeSet, cplex, X);
-			for (const auto& elem : additionalTimes) input.timeSet.insert(elem);
-			auto additionalTriplets = detectAdditionalTriplets(parameter.input_VRPTW, parameter.columnPool, input.tripletSet, cplex, X);
-			for (const auto& elem : additionalTriplets) input.tripletSet.insert(elem);
+			auto additionalTimes = detectAdditionalTimes(parameter.input_VRPTW, parameter.columnPool, constraints.timeSet, cplex, X);
+			for (const auto& elem : additionalTimes) constraints.timeSet.insert(elem);
+			auto additionalTriplets = detectAdditionalTriplets(parameter.input_VRPTW, parameter.columnPool, constraints.tripletSet, cplex, X);
+			for (const auto& elem : additionalTriplets) constraints.tripletSet.insert(elem);
 			if (additionalTimes.empty() && additionalTriplets.empty()) {
 				break;
 			}
@@ -239,17 +239,17 @@ double maxNumCoexist(const int maxNumVehicles, const vector<Label_TimePath>& sel
 
 
 NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) {
-	string strLog = "Begin running the procedure titled BCAlgorithm.";
-	print(parameter.allowPrintLog, output, strLog);
-	clock_t start = clock();
-
-	Info_VRPTW_BC info;
-	info.prunedInfeasibility = info.prunedInteger = info.prunedBound = info.branched = 0;
-
 	NODE_VRPTW_BC bestNode = initBCNode(parameter);
 	try {
-		vector<pair<vector<int>, double>> globalSFCSet;
+		string strLog = "Begin running the procedure titled BCAlgorithm.";
+		print(parameter.allowPrintLog, output, strLog);
+
+		clock_t start = clock();
+		ConstraintSet constraints;
+		Info_VRPTW_BC info;
+		info.prunedInfeasibility = info.prunedInteger = info.prunedBound = info.branched = 0;
 		multiset<NODE_VRPTW_BC> nodes{ bestNode };
+
 		for (int iter = 1; !nodes.empty(); ++iter) {
 			auto worker = *nodes.begin();
 			nodes.erase(nodes.begin());
@@ -257,9 +257,7 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 				++info.prunedBound;
 				continue;
 			}
-
 			worker.solution.UB_Integer_Value = bestNode.solution.UB_Integer_Value;
-			worker.input.SFCSet = globalSFCSet;
 
 			strLog = "\nTime: " + numToStr(runTime(start)) + "\t" + "Iteration: " + numToStr(iter) + "\t"
 				+ "Depth: " + numToStr(worker.depth) + "\t" + "Best upper bound: " + numToStr(bestNode.solution.UB_Integer_Value) + "\t"
@@ -267,7 +265,7 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 				+ "prunedInteger: " + numToStr(info.prunedInteger) + "\t" + "prunedBound: " + numToStr(info.prunedBound) + "\t"
 				+ "branched: " + numToStr(info.branched);
 			print(parameter.allowPrintLog, output, strLog);
-			worker.solve(parameter, output);
+			worker.solve(parameter, constraints, output);
 
 			// Whether the LP corresponding to this node is Linearly feasible.
 			if (!worker.solution.feasible) {
@@ -283,9 +281,11 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 
 					double numCoexist = maxNumCoexist(parameter.input_VRPTW.MaxNumVehicles, worker.solution.UB_Integer_Solution);
 					if (greaterThanReal(worker.solution.UB_Integer_Solution.size(), numCoexist, PPM)) {
-						globalSFCSet.push_back(make_pair(worker.solution.Indices_UB_Integer_Solution, numCoexist));
+						// A violated SFC constraint is found.
+						constraints.SFCSet.push_back(make_pair(worker.solution.Indices_UB_Integer_Solution, numCoexist));
 					}
 					else if (lessThanReal(worker.solution.objective, bestNode.solution.UB_Integer_Value, PPM)) {
+						// A better feasible integer solution is found.
 						bestNode = worker;
 					}
 				}

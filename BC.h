@@ -12,12 +12,11 @@ public:
 	bool allowPrintLog;
 };
 
-class Input_VRPTW_BC {
+class ConstraintSet {
 public:
 	set<double, timeSortCriterion> timeSet;
 	set<tuple<int, int, int>> tripletSet;
 	vector<pair<vector<int>, double>> SFCSet;
-	vector<pair<vector<int>, bool>> branchOnArcs;
 };
 
 class Info_VRPTW_BC {
@@ -26,6 +25,11 @@ public:
 	int prunedInteger;
 	int prunedBound;
 	int branched;
+};
+
+class Input_VRPTW_BC {
+public:
+	vector<pair<vector<int>, bool>> branchOnArcs;
 };
 
 class Solution_VRPTW_BC {
@@ -49,7 +53,7 @@ public:
 	Input_VRPTW_BC input;
 	Solution_VRPTW_BC solution;
 
-	void solve(const Parameter_VRPTW_BC& parameter, ostream& output);
+	void solve(const Parameter_VRPTW_BC& parameter, ConstraintSet& constraints, ostream& output);
 	void setPriority(double weightLB, double weightDepth) { priority = weightLB * solution.objective + weightDepth * depth; }
 	void getIntegerSolution(const Parameter_VRPTW_BC& parameter, const IloCplex& cplex, const IloNumVarArray& X);
 	void getVisitArcs(const Parameter_VRPTW_BC& parameter, const IloCplex& cplex, const IloNumVarArray& X);
