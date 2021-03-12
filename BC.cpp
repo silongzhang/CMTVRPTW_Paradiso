@@ -223,15 +223,21 @@ NODE_VRPTW_BC initBCNode(const Parameter_VRPTW_BC& parameter) {
 
 
 double maxNumCoexist(const int maxNumVehicles, const vector<Label_TimePath>& selectedStructures) {
-	double numCoexist;
+	double numCoexist = -1;
 	try {
 		Data_Input_VRPTW input_TOPTW = constructDataVRPTW(maxNumVehicles, selectedStructures);
-		Parameter_BP parameter_BP;
-		parameter_BP.weightLB = parameter_BP.weightDepth = 1;
-		parameter_BP.allowPrintLog = false;
-		BBNODE solTOPTW = BPAlgorithm(input_TOPTW, parameter_BP, cout);
-		if (!solTOPTW.solution.feasible || !solTOPTW.solution.integer) throw exception();
-		numCoexist = -solTOPTW.solution.objective;
+		
+		//Parameter_BP parameter_BP;
+		//parameter_BP.weightLB = parameter_BP.weightDepth = 1;
+		//parameter_BP.allowPrintLog = false;
+		//BBNODE solTOPTW = BPAlgorithm(input_TOPTW, parameter_BP, cout);
+		//if (!solTOPTW.solution.feasible || !solTOPTW.solution.integer) throw exception();
+		//numCoexist = -solTOPTW.solution.objective;
+
+		Parameter_TOPTW_ArcFlow parameter_ArcFlow;
+		parameter_ArcFlow.input_VRPTW = input_TOPTW;
+		parameter_ArcFlow.allowPrintLog = false;
+		numCoexist = TOPTW_ArcFlow(parameter_ArcFlow, cout);
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("maxNumCoexist", exc);
@@ -283,16 +289,10 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 
 		for (int iter = 1; !nodes.empty(); ++iter) {
 			auto worker = *nodes.begin();
-			nodes.erase(nodes.begin());
-			if (!lessThanReal(worker.solution.objective, bestNode.solution.UB_Integer_Value, PPM)) {
-				++info.prunedBound;
-				continue;
-			}
-			worker.solution.UB_Integer_Value = bestNode.solution.UB_Integer_Value;
 
 			strLog = "\nTime: " + numToStr(runTime(start)) + "\t" + "Iteration: " + numToStr(iter) + "\t"
 				+ "Depth: " + numToStr(worker.depth) + "\t" + "Best upper bound: " + numToStr(bestNode.solution.UB_Integer_Value) + "\t"
-				+ "Remaining nodes: " + numToStr(nodes.size() + 1) + "\t" + "prunedInfeasibility: " + numToStr(info.prunedInfeasibility) + "\t"
+				+ "Remaining nodes: " + numToStr(nodes.size()) + "\t" + "prunedInfeasibility: " + numToStr(info.prunedInfeasibility) + "\t"
 				+ "prunedInteger: " + numToStr(info.prunedInteger) + "\t" + "prunedBound: " + numToStr(info.prunedBound) + "\t"
 				+ "branched: " + numToStr(info.branched);
 			strLog += "\n# of time constraints: " + numToStr(constraints.timeSet.size()) + "\t"
@@ -300,34 +300,51 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 				+ "# of SFC constraints: " + numToStr(constraints.SFCSet.size());
 			print(parameter.allowPrintLog, output, strLog);
 			if (parameter.allowPrintLog) printBranchParameter(worker);
+
+			nodes.erase(nodes.begin());
+			if (!lessThanReal(worker.solution.objective, bestNode.solution.UB_Integer_Value, PPM)) {
+				++info.prunedBound;
+				print(parameter.allowPrintLog, output, "Pruned due to bound before solving the node.");
+				continue;
+			}
+
+			worker.solution.UB_Integer_Value = bestNode.solution.UB_Integer_Value;
+			print(parameter.allowPrintLog, output, "Solve the node ...");
 			worker.solve(parameter, constraints, output);
 
 			// Whether the LP corresponding to this node is Linearly feasible.
 			if (!worker.solution.feasible) {
 				++info.prunedInfeasibility;
+				print(parameter.allowPrintLog, output, "Pruned due to infeasibility.");
 			}
 			else {
 				// Whether the optimal solution corresponding to this node is an integer solution.
 				if (worker.solution.integer) {
 					++info.prunedInteger;
+					print(parameter.allowPrintLog, output, "Pruned due to integer.");
 
 					double numCoexist = maxNumCoexist(parameter.input_VRPTW.MaxNumVehicles, worker.solution.UB_Integer_Solution);
+
 					if (greaterThanReal(worker.solution.UB_Integer_Solution.size(), numCoexist, PPM)) {
 						// A violated SFC constraint is found.
 						constraints.SFCSet.push_back(make_pair(worker.solution.Indices_UB_Integer_Solution, numCoexist));
+						print(parameter.allowPrintLog, output, "A violated SFC constraint is found.");
 					}
 					else if (lessThanReal(worker.solution.objective, bestNode.solution.UB_Integer_Value, PPM)) {
 						// A better feasible integer solution is found.
 						bestNode = worker;
+						print(parameter.allowPrintLog, output, "A better feasible integer solution is found.");
 					}
 				}
 				else if (!lessThanReal(worker.solution.objective, bestNode.solution.UB_Integer_Value, PPM)) {
 					++info.prunedBound;
+					print(parameter.allowPrintLog, output, "Pruned due to bound after solving the node.");
 				}
 				else {
 					// The lower bound corresponding to this node is less than the best upper bound found so far.
 					// Branch.
 					++info.branched;
+					print(parameter.allowPrintLog, output, "Branch ...");
 					const auto isIntegerArc = isInteger_2(worker.solution.visitArcs);
 					if (get<0>(isIntegerArc)) throw exception();
 					int tail = get<1>(isIntegerArc), head = get<2>(isIntegerArc);
