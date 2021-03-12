@@ -74,7 +74,7 @@ Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput) {
 	try {
 		Parameter_OPRE_2019_1874 parameter;
 		parameter.gapInit = 0.05;
-		parameter.gapIncre = 0.05;
+		parameter.gapIncre = 0.01;
 
 		readFromFileVRPTW(parameter.input_VRPTW, strInput);
 		parameter.input_VRPTW.constrainResource = { true,false,true };

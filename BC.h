@@ -70,5 +70,6 @@ NODE_VRPTW_BC initBCNode(const Parameter_VRPTW_BC& parameter);
 double maxNumCoexist(const int maxNumVehicles, const vector<Label_TimePath>& selectedStructures);
 vector<int> traverse(const Parameter_VRPTW_BC& parameter, int tail, int head);
 NODE_VRPTW_BC childNode(const Parameter_VRPTW_BC& parameter, const NODE_VRPTW_BC& rhs);
+void printBranchParameter(const NODE_VRPTW_BC& worker);
 NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output);
 

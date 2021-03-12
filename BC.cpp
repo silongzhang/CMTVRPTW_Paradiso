@@ -171,6 +171,7 @@ void NODE_VRPTW_BC::solve(const Parameter_VRPTW_BC& parameter, ConstraintSet& co
 
 		// Solve the model.
 		IloCplex cplex(model);
+		cplex.setOut(env.getNullStream());
 		for (; true;) {
 			if (!cplex.solve()) {
 				solution.feasible = false;
@@ -259,6 +260,14 @@ NODE_VRPTW_BC childNode(const Parameter_VRPTW_BC& parameter, const NODE_VRPTW_BC
 }
 
 
+void printBranchParameter(const NODE_VRPTW_BC& worker) {
+	cout << "Branch Information: " << endl;
+	for (const auto& elem : worker.input.branchOnArcs) {
+		cout << "The sum of variables associated with " << elem.first.size() << " structures is equal to " << elem.second << endl;
+	}
+}
+
+
 NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) {
 	NODE_VRPTW_BC bestNode = initBCNode(parameter);
 	try {
@@ -289,6 +298,7 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 				+ "# of subset row constraints: " + numToStr(constraints.tripletSet.size()) + "\t"
 				+ "# of SFC constraints: " + numToStr(constraints.SFCSet.size());
 			print(parameter.allowPrintLog, output, strLog);
+			if (parameter.allowPrintLog) printBranchParameter(worker);
 			worker.solve(parameter, constraints, output);
 
 			// Whether the LP corresponding to this node is Linearly feasible.
