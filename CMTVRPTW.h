@@ -1,5 +1,6 @@
 #pragma once
 #include"CuttingPlane.h"
+#include"BC.h"
 
 class Parameter_OPRE_2019_1874 {
 public:

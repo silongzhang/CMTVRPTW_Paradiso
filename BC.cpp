@@ -238,6 +238,27 @@ double maxNumCoexist(const int maxNumVehicles, const vector<Label_TimePath>& sel
 }
 
 
+// Get indices of structures which traverse the arc.
+vector<int> traverse(const Parameter_VRPTW_BC& parameter, int tail, int head) {
+	vector<int> result;
+	for (int i = 0; i < parameter.columnPool.size(); ++i) {
+		if (parameter.columnPool[i].hasVisitedArc(tail, head)) {
+			result.push_back(i);
+		}
+	}
+	return result;
+}
+
+
+NODE_VRPTW_BC childNode(const Parameter_VRPTW_BC& parameter, const NODE_VRPTW_BC& rhs) {
+	NODE_VRPTW_BC child(rhs);
+	++child.depth;
+	child.setPriority(parameter.weightLB, parameter.weightDepth);
+	child.solution.feasible = child.solution.integer = false;
+	return child;
+}
+
+
 NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) {
 	NODE_VRPTW_BC bestNode = initBCNode(parameter);
 	try {
@@ -264,6 +285,9 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 				+ "Remaining nodes: " + numToStr(nodes.size() + 1) + "\t" + "prunedInfeasibility: " + numToStr(info.prunedInfeasibility) + "\t"
 				+ "prunedInteger: " + numToStr(info.prunedInteger) + "\t" + "prunedBound: " + numToStr(info.prunedBound) + "\t"
 				+ "branched: " + numToStr(info.branched);
+			strLog += "\n# of time constraints: " + numToStr(constraints.timeSet.size()) + "\t"
+				+ "# of subset row constraints: " + numToStr(constraints.tripletSet.size()) + "\t"
+				+ "# of SFC constraints: " + numToStr(constraints.SFCSet.size());
 			print(parameter.allowPrintLog, output, strLog);
 			worker.solve(parameter, constraints, output);
 
@@ -272,9 +296,6 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 				++info.prunedInfeasibility;
 			}
 			else {
-				strLog = "Objective: " + numToStr(worker.solution.objective);
-				print(parameter.allowPrintLog, output, strLog);
-
 				// Whether the optimal solution corresponding to this node is an integer solution.
 				if (worker.solution.integer) {
 					++info.prunedInteger;
@@ -296,12 +317,15 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 					// The lower bound corresponding to this node is less than the best upper bound found so far.
 					// Branch.
 					++info.branched;
-
-
-
-
-
-
+					const auto isIntegerArc = isInteger_2(worker.solution.visitArcs);
+					if (get<0>(isIntegerArc)) throw exception();
+					int tail = get<1>(isIntegerArc), head = get<2>(isIntegerArc);
+					vector<int> visitors = traverse(parameter, tail, head);
+					NODE_VRPTW_BC left = childNode(parameter, worker), right = childNode(parameter, worker);
+					left.input.branchOnArcs.push_back(make_pair(visitors, false));
+					right.input.branchOnArcs.push_back(make_pair(visitors, true));
+					nodes.insert(left);
+					nodes.insert(right);
 				}
 			}
 		}
@@ -310,6 +334,11 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 			+ "Remaining nodes: " + numToStr(nodes.size()) + "\t" + "prunedInfeasibility: " + numToStr(info.prunedInfeasibility) + "\t"
 			+ "prunedInteger: " + numToStr(info.prunedInteger) + "\t" + "prunedBound: " + numToStr(info.prunedBound) + "\t"
 			+ "branched: " + numToStr(info.branched);
+		strLog += "\n# of time constraints: " + numToStr(constraints.timeSet.size()) + "\t"
+			+ "# of subset row constraints: " + numToStr(constraints.tripletSet.size()) + "\t"
+			+ "# of SFC constraints: " + numToStr(constraints.SFCSet.size());
+		print(parameter.allowPrintLog, output, strLog);
+		strLog = "\nThe procedure titled BCAlgorithm is finished.";
 		print(parameter.allowPrintLog, output, strLog);
 	}
 	catch (const exception& exc) {
@@ -317,8 +346,4 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 	}
 	return bestNode;
 }
-
-
-
-
 

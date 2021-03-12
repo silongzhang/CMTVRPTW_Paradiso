@@ -34,17 +34,32 @@ Solution_OPRE_2019_1874 Framework_OPRE_2019_1874::solve(const Parameter_OPRE_201
 
 			last = clock();
 			cout << endl << "**************************************" << endl;
-			Parameter_CuttingPlane parameter_CuttingPlane;
-			parameter_CuttingPlane.input_VRPTW = parameter.input_VRPTW;
-			parameter_CuttingPlane.columnPool = resultReduction;
-			Solution_CuttingPlane resultCuttingPlane = CuttingPlaneAlgorithm(parameter_CuttingPlane);
+			Parameter_VRPTW_BC parameter_BC;
+			parameter_BC.input_VRPTW = parameter.input_VRPTW;
+			parameter_BC.columnPool = resultReduction;
+			parameter_BC.weightLB = parameter_BC.weightDepth = 1;
+			parameter_BC.allowPrintLog = true;
+			NODE_VRPTW_BC resultBC = BCAlgorithm(parameter_BC, cout);
 			cout << "######################################" << endl << endl;
-
-			if (resultCuttingPlane.status == OptimalityStatus::Optimal) {
-				solution.objective = resultCuttingPlane.objective;
-				solution.routes = resultCuttingPlane.routes;
-				solution.status = greaterThanReal(resultCuttingPlane.objective, UB_Guess, PPM) ? OptimalityStatus::Feasible : OptimalityStatus::Optimal;
+			if (resultBC.solution.feasible) {
+				solution.objective = resultBC.solution.objective;
+				solution.routes = resultBC.solution.UB_Integer_Solution;
+				solution.status = greaterThanReal(resultBC.solution.objective, UB_Guess, PPM) ? OptimalityStatus::Feasible : OptimalityStatus::Optimal;
 			}
+
+			//last = clock();
+			//cout << endl << "**************************************" << endl;
+			//Parameter_CuttingPlane parameter_CuttingPlane;
+			//parameter_CuttingPlane.input_VRPTW = parameter.input_VRPTW;
+			//parameter_CuttingPlane.columnPool = resultReduction;
+			//Solution_CuttingPlane resultCuttingPlane = CuttingPlaneAlgorithm(parameter_CuttingPlane);
+			//cout << "######################################" << endl << endl;
+
+			//if (resultCuttingPlane.status == OptimalityStatus::Optimal) {
+			//	solution.objective = resultCuttingPlane.objective;
+			//	solution.routes = resultCuttingPlane.routes;
+			//	solution.status = greaterThanReal(resultCuttingPlane.objective, UB_Guess, PPM) ? OptimalityStatus::Feasible : OptimalityStatus::Optimal;
+			//}
 		}
 	}
 	catch (const exception& exc) {
