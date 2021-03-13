@@ -12,7 +12,7 @@ Solution_OPRE_2019_1874 Framework_OPRE_2019_1874::solve(const Parameter_OPRE_201
 			cout << "**************************************" << endl;
 			Solution_VRPTW_CG result_VRPTW_CG_LB = lbAtCGRootNodeVRPTW(parameter.input_VRPTW);
 			LB_1 = result_VRPTW_CG_LB.getCost();
-			UB_Guess = solution.status == OptimalityStatus::Feasible ? solution.objective : (1 + gapGuess) * LB_1;
+			UB_Guess = min(solution.objective, (1 + gapGuess) * LB_1);
 			cout << "Time: " << numToStr(runTime(last)) << '\t' << "Lower Bound 1: " << LB_1 << "\t" << "UB_Guess: " << UB_Guess << endl;
 
 			last = clock();

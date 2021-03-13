@@ -90,12 +90,19 @@ void addConstraintsBranchOnArcs_VRPTW_BC(IloModel model, IloNumVarArray X, const
 	try {
 		auto env = model.getEnv();
 		for (const auto& elem : branchOnArcs) {
-			IloExpr expr(env);
-			for (const auto i : elem.first) {
-				expr += X[i];
+			if (elem.second) {
+				IloExpr expr(env);
+				for (const auto i : elem.first) {
+					expr += X[i];
+				}
+				model.add(expr == 1);
+				expr.end();
 			}
-			elem.second ? model.add(expr == 1) : model.add(expr == 0);
-			expr.end();
+			else {
+				for (const auto i : elem.first) {
+					model.add(X[i] == 0);
+				}				
+			}			
 		}
 	}
 	catch (const exception& exc) {
@@ -173,10 +180,12 @@ void NODE_VRPTW_BC::solve(const Parameter_VRPTW_BC& parameter, ConstraintSet& co
 		IloCplex cplex(model);
 		cplex.setOut(env.getNullStream());
 		for (; true;) {
-			if (!cplex.solve()) {
+			cplex.solve();
+			if (cplex.getStatus() == IloCplex::Infeasible) {
 				solution.feasible = false;
 				return;
 			}
+			else if (cplex.getCplexStatus() != IloCplex::Optimal) throw exception();
 
 			auto additionalTimes = detectAdditionalTimes(parameter.input_VRPTW, parameter.columnPool, constraints.timeSet, cplex, X);
 			for (const auto& elem : additionalTimes) constraints.timeSet.insert(elem);
@@ -311,6 +320,7 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 			worker.solution.UB_Integer_Value = bestNode.solution.UB_Integer_Value;
 			print(parameter.allowPrintLog, output, "Solve the node ...");
 			worker.solve(parameter, constraints, output);
+			print(parameter.allowPrintLog, output, "The node is solved.");
 
 			// Whether the LP corresponding to this node is Linearly feasible.
 			if (!worker.solution.feasible) {
