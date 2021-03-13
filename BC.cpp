@@ -120,14 +120,14 @@ void NODE_VRPTW_BC::getIntegerSolution(const Parameter_VRPTW_BC& parameter, cons
 				solution.UB_Integer_Solution.push_back(parameter.columnPool[i]);
 				solution.Indices_UB_Integer_Solution.push_back(i);
 			}
-			else if (!equalToReal(cplex.getValue(X[i]), 0, PPM)) throw exception();
+			else if (!equalToReal(cplex.getValue(X[i]), 0, PPM)) throw exception("It is not an integer solution.");
 		}
 
 		solution.UB_Integer_Value = 0;
 		for (const auto& elem : solution.UB_Integer_Solution) {
 			solution.UB_Integer_Value += elem.getRealCost();
 		}
-		if (!equalToReal(solution.UB_Integer_Value, cplex.getObjValue(), PPM)) throw exception();
+		if (!equalToReal(solution.UB_Integer_Value, cplex.getObjValue(), MILLI)) throw exception("The two costs are not the same.");
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("NODE_VRPTW_BC::getIntegerSolution", exc);
@@ -334,6 +334,7 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 					print(parameter.allowPrintLog, output, "Pruned due to integer.");
 
 					double numCoexist = maxNumCoexist(parameter.input_VRPTW.MaxNumVehicles, worker.solution.UB_Integer_Solution);
+					if (lessThanReal(numCoexist, 1, PPM)) throw exception("The maximum number of structures which can coexist is false.");
 
 					if (greaterThanReal(worker.solution.UB_Integer_Solution.size(), numCoexist, PPM)) {
 						// A violated SFC constraint is found.

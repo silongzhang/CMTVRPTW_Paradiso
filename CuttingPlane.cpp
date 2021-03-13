@@ -174,9 +174,9 @@ Data_Input_VRPTW constructDataVRPTW(const int maxNumVehicles, const vector<Label
 
 		for (int i = 1; i < inputVRPTW.NumVertices; ++i) {
 			for (int j = 0; j < inputVRPTW.NumVertices; ++j) {
-				double e_i = selectedStructures[i - 1].getTimeAttribute().getEarliestDeparture();
+				double e_i = inputVRPTW.TimeWindow[i].first;
 				double d_i = selectedStructures[i - 1].getTimeAttribute().getDuration();
-				double l_j = selectedStructures[j - 1].getTimeAttribute().getLatestDeparture();
+				double l_j = inputVRPTW.TimeWindow[j].second;
 				if (i != j && e_i + d_i <= l_j) {
 					inputVRPTW.Time[i][j] = d_i;
 					inputVRPTW.RealCost[i][j] = 1;
