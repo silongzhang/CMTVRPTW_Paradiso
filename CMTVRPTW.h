@@ -27,5 +27,17 @@ public:
 	Solution_OPRE_2019_1874 solve(const Parameter_OPRE_2019_1874& parameter);
 };
 
+class Parameter_CMTVRPTW_ArcFlow {
+public:
+	int NumVertices;									// 0, 1, 2, ..., N - 1
+	int NumDummyDepots;									// N, N + 1, ..., N + K - 1
+	int NumVehicles;
+	vector<pair<TimeType, TimeType>> TimeWindow;
+	vector<vector<DistanceType>> Distance;
+	vector<vector<bool>> ExistingArcs;
+};
+
 Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput);
+void setObjective_CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X);
+void setConstraintsDomainX_CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X);
 

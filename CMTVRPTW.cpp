@@ -89,3 +89,93 @@ Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput) {
 	return solution;
 }
 
+
+void setObjective_CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
+	try {
+		auto env = model.getEnv();
+		IloExpr expr(env);
+		for (int i = 0; i < X.getSize(); ++i) {
+			for (int j = 0; j < X[i].getSize(); ++j) {
+				if (parameter.ExistingArcs[i][j]) {
+					expr += parameter.Distance[i][j] * X[i][j];
+				}
+			}
+		}
+		model.add(IloMinimize(env, expr));
+		expr.end();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setObjective_ArcFlow", exc);
+	}
+}
+
+
+void setConstraintsDomainX_CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
+	try {
+		const int NUM = X.getSize();
+		for (int i = 0; i < NUM; ++i) {
+			for (int j = 0; j < NUM; ++j) {
+				if (!parameter.ExistingArcs[i][j]) {
+					model.add(X[i][j] == IloFalse);
+				}
+			}
+		}
+
+		auto env = model.getEnv();
+		IloExpr numVeh(env);
+		for (int j = 0; j < NUM; ++j) {
+			model.add(X[j][0] == IloFalse);
+			model.add(X[NUM - 1][j] == IloFalse);
+			if (parameter.ExistingArcs[0][j]) numVeh += X[0][j];
+		}
+		model.add(numVeh <= parameter.NumVehicles);
+		numVeh.end();
+
+		for (int i = 1; i < NUM - 1; ++i) {
+			IloExpr outDegree(env), inDegree(env);
+			for (int j = 0; j < NUM; ++j) {
+				if (parameter.ExistingArcs[i][j]) outDegree += X[i][j];
+				if (parameter.ExistingArcs[j][i]) inDegree += X[j][i];
+			}
+			model.add(outDegree == 1);
+			model.add(outDegree == inDegree);
+			outDegree.end(), inDegree.end();
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setConstraintsDomainX_CMTVRPTW_ArcFlow", exc);
+	}
+}
+
+
+double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output) {
+	double result = -1;
+	IloEnv env;
+	try {
+		const int N = parameter.NumVertices, K = parameter.NumDummyDepots;
+		// Define the variables.
+		IloBoolVarArray2 X(env, N + K);
+		for (int i = 0; i < X.getSize(); ++i) {
+			X[i] = IloBoolVarArray(env, N + K);
+		}
+
+		IloNumArray early(env, N + K), late(env, N + K);
+		for (int i = 0; i < N + K; ++i) {
+			early[i] = parameter.TimeWindow[i].first;
+			late[i] = parameter.TimeWindow[i].second;
+		}
+		IloNumVarArray Y(env, early, late);
+
+		// Define the model.
+		IloModel model(env);
+		setObjective_CMTVRPTW_ArcFlow(parameter, model, X);
+		setConstraintsDomainX_CMTVRPTW_ArcFlow(parameter, model, X);
+
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("CMTVRPTW_ArcFlow", exc);
+	}
+	env.end();
+	return result;
+}
+
