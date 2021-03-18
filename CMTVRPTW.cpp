@@ -90,7 +90,7 @@ Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput) {
 }
 
 
-void setObjective_CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
+void setObjective(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
 	try {
 		auto env = model.getEnv();
 		IloExpr expr(env);
@@ -110,7 +110,7 @@ void setObjective_CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, 
 }
 
 
-void setConstraintsDomainX_CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
+void setConstraintsX(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
 	try {
 		const int NUM = X.getSize();
 		for (int i = 0; i < NUM; ++i) {
@@ -148,6 +148,24 @@ void setConstraintsDomainX_CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& pa
 }
 
 
+void setConstraintsTimeWindow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y) {
+	try {
+		for (int i = 0; i < X.getSize(); ++i) {
+			for (int j = 0; j < X[i].getSize(); ++j) {
+				if (parameter.ExistingArcs[i][j]) {
+					const double tm = parameter.Time[i][j];
+					const double M = parameter.TimeWindow[i].second + tm - parameter.TimeWindow[j].first;
+					model.add(Y[i] + tm - Y[j] <= (1 - X[i][j]) * M);
+				}
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setConstraintsTimeWindow", exc);
+	}
+}
+
+
 double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output) {
 	double result = -1;
 	IloEnv env;
@@ -168,8 +186,9 @@ double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& ou
 
 		// Define the model.
 		IloModel model(env);
-		setObjective_CMTVRPTW_ArcFlow(parameter, model, X);
-		setConstraintsDomainX_CMTVRPTW_ArcFlow(parameter, model, X);
+		setObjective(parameter, model, X);
+		setConstraintsX(parameter, model, X);
+		setConstraintsTimeWindow(parameter, model, X, Y);
 
 	}
 	catch (const exception& exc) {
