@@ -112,38 +112,44 @@ void setObjective(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, I
 
 void setConstraintsX(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X) {
 	try {
+		auto env = model.getEnv();
+		const int N = parameter.N;
+		const int K = parameter.K;
 		const int NUM = X.getSize();
+		IloExpr vehicles(env);
 		for (int i = 0; i < NUM; ++i) {
+			model.add(X[i][0] == IloFalse);
+			model.add(X[N][i] == IloFalse);
+			if (parameter.ExistingArcs[0][i]) vehicles += X[0][i];
 			for (int j = 0; j < NUM; ++j) {
-				if (!parameter.ExistingArcs[i][j]) {
+				if (!parameter.ExistingArcs[i][j] || (parameter.isDepot(i) && parameter.isDepot(j))) {
 					model.add(X[i][j] == IloFalse);
 				}
 			}
 		}
+		model.add(vehicles <= parameter.V);
+		vehicles.end();
 
-		auto env = model.getEnv();
-		IloExpr numVeh(env);
-		for (int j = 0; j < NUM; ++j) {
-			model.add(X[j][0] == IloFalse);
-			model.add(X[NUM - 1][j] == IloFalse);
-			if (parameter.ExistingArcs[0][j]) numVeh += X[0][j];
-		}
-		model.add(numVeh <= parameter.NumVehicles);
-		numVeh.end();
-
-		for (int i = 1; i < NUM - 1; ++i) {
-			IloExpr outDegree(env), inDegree(env);
+		for (int i = 1; i < NUM; ++i) {
+			if (i == N) continue;
+			IloExpr out(env), in(env);
 			for (int j = 0; j < NUM; ++j) {
-				if (parameter.ExistingArcs[i][j]) outDegree += X[i][j];
-				if (parameter.ExistingArcs[j][i]) inDegree += X[j][i];
+				if (parameter.ExistingArcs[i][j]) out += X[i][j];
+				if (parameter.ExistingArcs[j][i]) in += X[j][i];
 			}
-			model.add(outDegree == 1);
-			model.add(outDegree == inDegree);
-			outDegree.end(), inDegree.end();
+			if (1 <= i && i <= N - 1) {
+				model.add(out == in);
+				model.add(out == 1);
+			}
+			else if (N + 1 <= i && i <= N + K) {
+				model.add(out == in);
+				model.add(out <= 1);
+			}
+			out.end(), in.end();
 		}
 	}
 	catch (const exception& exc) {
-		printErrorAndExit("setConstraintsDomainX_CMTVRPTW_ArcFlow", exc);
+		printErrorAndExit("setConstraintsX", exc);
 	}
 }
 
@@ -170,15 +176,15 @@ double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& ou
 	double result = -1;
 	IloEnv env;
 	try {
-		const int N = parameter.NumVertices, K = parameter.NumDummyDepots;
+		const int N = parameter.N, K = parameter.K;
 		// Define the variables.
-		IloBoolVarArray2 X(env, N + K);
+		IloBoolVarArray2 X(env, N + K + 1);
 		for (int i = 0; i < X.getSize(); ++i) {
-			X[i] = IloBoolVarArray(env, N + K);
+			X[i] = IloBoolVarArray(env, N + K + 1);
 		}
 
-		IloNumArray early(env, N + K), late(env, N + K);
-		for (int i = 0; i < N + K; ++i) {
+		IloNumArray early(env, N + K + 1), late(env, N + K + 1);
+		for (int i = 0; i < early.getSize(); ++i) {
 			early[i] = parameter.TimeWindow[i].first;
 			late[i] = parameter.TimeWindow[i].second;
 		}

@@ -29,14 +29,16 @@ public:
 
 class Parameter_CMTVRPTW_ArcFlow {
 public:
-	int NumVertices;									// 0, 1, 2, ..., N - 1
-	int NumDummyDepots;									// N, N + 1, ..., N + K - 1
-	int NumVehicles;
+	int N;											// The set of customers is {1, 2, ..., N - 1}, 0 and N are the depot and dummy depot respectively.
+	int K;											// {N + 1, N + 2, ..., N + K} is the set of dummy depots, and each of which can be visited at most once.
+	int V;											// The number of available vehicles.
 	vector<vector<QuantityType>> Quantity;
 	vector<vector<DistanceType>> Distance;
 	vector<vector<TimeType>> Time;
 	vector<pair<TimeType, TimeType>> TimeWindow;
 	vector<vector<bool>> ExistingArcs;
+
+	bool isDepot(const int i) const { return i == 0 || (N <= i && i <= N + K); }
 };
 
 Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput);
