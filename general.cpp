@@ -116,6 +116,25 @@ pair<bool, int> outNode(const unordered_set<int>& excluded, const IloCplex& cple
 }
 
 
+pair<bool, int> outNode(const unordered_set<int>& excluded, const vector<vector<bool>>& X, int start) {
+	bool exist = false;
+	int index = -1;
+	try {
+		for (int j = 0; j < X[start].size(); ++j) {
+			if (X[start][j] && excluded.find(j) == excluded.end()) {
+				exist = true;
+				index = j;
+				break;
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("outNode", exc);
+	}
+	return make_pair(exist, index);
+}
+
+
 // Get a path beginning with an arc.
 vector<int> getPath(const unordered_set<int>& excluded, const IloCplex& cplex, const IloBoolVarArray2& X, const pair<int, int>& arc) {
 	vector<int> result;
@@ -127,6 +146,33 @@ vector<int> getPath(const unordered_set<int>& excluded, const IloCplex& cplex, c
 		int pos = arc.second;
 		while (true) {
 			auto out = outNode(excluded, cplex, X, pos);
+			if (out.first && out.second != arc.first) {
+				pos = out.second;
+				result.push_back(pos);
+			}
+			else {
+				break;
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("getPath", exc);
+	}
+	return result;
+}
+
+
+// Get a path beginning with an arc.
+vector<int> getPath(const unordered_set<int>& excluded, const vector<vector<bool>>& X, const pair<int, int>& arc) {
+	vector<int> result;
+	try {
+		if (X[arc.first][arc.second] != IloTrue) throw exception();
+		result.push_back(arc.first);
+		result.push_back(arc.second);
+
+		int pos = arc.second;
+		while (true) {
+			auto out = outNode(excluded, X, pos);
 			if (out.first && out.second != arc.first) {
 				pos = out.second;
 				result.push_back(pos);

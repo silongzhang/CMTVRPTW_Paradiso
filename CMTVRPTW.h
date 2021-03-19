@@ -29,9 +29,10 @@ public:
 
 class Parameter_CMTVRPTW_ArcFlow {
 public:
-	int N;											// The set of customers is {1, 2, ..., N - 1}, 0 and N are the depot and dummy depot respectively.
-	int K;											// {N + 1, N + 2, ..., N + K} is the set of dummy depots, and each of which can be visited at most once.
-	int V;											// The number of available vehicles.
+	int V;									// The number of available vehicles.
+	double Capacity;
+	int N;									// The set of customers is {1, 2, ..., N - 1}, 0 and N are the depot and dummy depot respectively.
+	int K;									// {N + 1, N + 2, ..., N + K} is the set of dummy depots, and each of which can be visited at most once.
 	vector<vector<QuantityType>> Quantity;
 	vector<vector<DistanceType>> Distance;
 	vector<vector<TimeType>> Time;
@@ -39,6 +40,9 @@ public:
 	vector<vector<bool>> ExistingArcs;
 
 	bool isDepot(const int i) const { return i == 0 || (N <= i && i <= N + K); }
+	vector<int> depotIndex(const vector<int>& route) const;
+	vector<vector<int>> getPaths(const vector<int>& route) const;
+	int realIndex(const int i) const { return i < N ? i : 0; }
 };
 
 Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput);
@@ -46,4 +50,6 @@ void setObjective(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, I
 void setConstraintsX(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X);
 void setConstraintsTimeWindow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y);
 void reduceSymmetry(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y);
+double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output);
+double CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostream& output);
 
