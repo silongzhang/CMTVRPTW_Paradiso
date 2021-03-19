@@ -172,6 +172,29 @@ void setConstraintsTimeWindow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloMo
 }
 
 
+void reduceSymmetry(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y) {
+	try {
+		auto env = model.getEnv();
+		const int N = parameter.N;
+		const int K = parameter.K;
+		const int NUM = X.getSize();
+		for (int i = N + 1; i < N + K; ++i) {
+			IloExpr pre(env), suc(env);
+			for (int j = 0; j < NUM; ++j) {
+				if (parameter.ExistingArcs[i][j]) pre += X[i][j];
+				if (parameter.ExistingArcs[i + 1][j]) suc += X[i + 1][j];
+			}
+			model.add(pre >= suc);
+			model.add(Y[i] <= Y[i + 1]);
+			pre.end(), suc.end();
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("reduceSymmetry", exc);
+	}
+}
+
+
 double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output) {
 	double result = -1;
 	IloEnv env;
@@ -195,6 +218,7 @@ double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& ou
 		setObjective(parameter, model, X);
 		setConstraintsX(parameter, model, X);
 		setConstraintsTimeWindow(parameter, model, X, Y);
+		reduceSymmetry(parameter, model, X, Y);
 
 	}
 	catch (const exception& exc) {

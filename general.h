@@ -34,5 +34,6 @@ Instance_Solomon readSolomonInstance(const string &input, const int numVer = 101
 void getFiles(const string &folder, vector<string> &paths, vector<string> &names);
 vector<int> sample(int begin, int end, int size, int numShuffle);
 pair<bool, int> outNode(const unordered_set<int>& excluded, const IloCplex& cplex, const IloBoolVarArray2& X, int start);
+vector<int> getPath(const unordered_set<int>& excluded, const IloCplex& cplex, const IloBoolVarArray2& X, const pair<int, int>& arc);
 vector<int> getPath(const unordered_set<int>& excluded, const IloCplex& cplex, const IloBoolVarArray2& X, int start);
 
