@@ -8,12 +8,8 @@
 
 
 int main(int argc, char** argv) {
-	string strInput = "data//CMTVRPTW//Solomon Type 2 - 25//C201.txt";
-
-	//run_OPRE_2019_1874(strInput);
-
-	const int numDummyDepots = 10;
-	CMTVRPTW_ArcFlow(strInput, numDummyDepots, cout);
+	const string outFile = "data//CMTVRPTW//Test//CMTVRPTW_ArcFlow//CMTVRPTW_ArcFlow_2021.03.20.txt";
+	Test_CMTVRPTW_ArcFlow(outFile);
 
 	return 0;
 }

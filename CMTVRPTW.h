@@ -56,4 +56,5 @@ void setConstraintsCapacity(const Parameter_CMTVRPTW_ArcFlow& parameter, IloMode
 void reduceSymmetry(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y);
 tuple<double, double, double> CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output);
 tuple<double, double, double> CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostream& output);
+void Test_CMTVRPTW_ArcFlow(const string& outFile);
 

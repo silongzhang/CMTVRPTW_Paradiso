@@ -345,6 +345,48 @@ tuple<double, double, double> CMTVRPTW_ArcFlow(const string& strInput, const int
 }
 
 
+void Test_CMTVRPTW_ArcFlow(const string& outFile) {
+	try {
+		ofstream os(outFile);
+		if (!os) throw exception();
+		os << "Name" << '\t' << "Vertices" << '\t' << "Capacity" << '\t' << "Density" << '\t'
+			<< "Objective" << '\t' << "Gap" << '\t' << "Time" << endl;
+
+		vector<string> folders = { "data//CMTVRPTW//Solomon Type 2 - 25//",
+			"data//CMTVRPTW//Solomon Type 2 - 40//",
+			"data//CMTVRPTW//Solomon Type 2 - 50//" };
+		vector<string> names;
+		getFiles(folders[0], vector<string>(), names);
+
+		for (const auto& folder : folders) {
+			for (const auto& name : names) {
+				//if (folder == "data//CMTVRPTW//Solomon Type 2 - 50//" && name[0] == 'R' && name[1] == '2') continue;
+
+				string strInput = folder + name;
+				Data_Input_VRPTW inputVRPTW;
+				inputVRPTW.constrainResource = { true,false,true };
+				readFromFileVRPTW(inputVRPTW, strInput);
+				inputVRPTW.preprocess();
+
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << endl;
+				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t' << inputVRPTW.density << '\t';
+
+				const int numDummyDepots = 10;
+				auto result = CMTVRPTW_ArcFlow(strInput, numDummyDepots, cout);
+				os << get<0>(result) << '\t' << get<1>(result) << '\t' << get<2>(result) << endl;
+			}
+		}
+		os.close();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("Test_CMTVRPTW_ArcFlow", exc);
+	}
+}
+
+
 // ******************************************************************* //
 ILOLAZYCONSTRAINTCALLBACK2(LazyCallback_Capacity, Parameter_CMTVRPTW_ArcFlow, parameter, IloBoolVarArray2, X) {
 	try {
