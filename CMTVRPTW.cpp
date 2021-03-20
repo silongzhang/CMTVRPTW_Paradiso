@@ -38,7 +38,8 @@ Solution_CMTVRPTW_SP Framework_CMTVRPTW_SP::solve(const Parameter_CMTVRPTW_SP& p
 			cout << "**************************************" << endl;
 			Solution_VRPTW_CG result_VRPTW_CG_LB = lbAtCGRootNodeVRPTW(parameter.input_VRPTW);
 			solution.LB_1 = result_VRPTW_CG_LB.getCost();
-			UB_Guess = min(solution.objective, (1 + gapGuess) * solution.LB_1);
+			//UB_Guess = min(solution.objective, (1 + gapGuess) * solution.LB_1);
+			UB_Guess = solution.status == OptimalityStatus::Feasible ? solution.objective : (1 + gapGuess) * solution.LB_1;
 			solution.time_LB_1 = runTime(last);
 			cout << "Time: " << numToStr(solution.time_LB_1) << '\t' << "Lower Bound 1: " << solution.LB_1 << "\t" << "UB_Guess: " << UB_Guess << endl;
 
