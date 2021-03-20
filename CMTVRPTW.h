@@ -2,7 +2,7 @@
 #include"CuttingPlane.h"
 #include"BC.h"
 
-class Parameter_OPRE_2019_1874 {
+class Parameter_CMTVRPTW_SP {
 public:
 	Data_Input_VRPTW input_VRPTW;
 	double gapInit;
@@ -11,22 +11,30 @@ public:
 	bool ArcFlowRatherThanBP;					// true: solve TOPTW by the arc-flow model; false: by BP.
 };
 
-class Solution_OPRE_2019_1874 {
+class Solution_CMTVRPTW_SP {
 public:
 	OptimalityStatus status;
 	double objective;
 	vector<Label_TimePath> routes;
 };
 
-class Framework_OPRE_2019_1874 {
+class Framework_CMTVRPTW_SP {
 public:
 	double gapGuess;
-	double LB_1;
 	double UB_Guess;
+	double LB_1;
+	double time_LB_1;
+	int size_1;
+	double time_enumeration;
 	double LB_2;
+	double time_LB_2;
 	vector<Label_TimePath> columnPool;
+	int nSFC;
+	int nNode;
+	double time_BC;
+	double time_total;
 
-	Solution_OPRE_2019_1874 solve(const Parameter_OPRE_2019_1874& parameter);
+	Solution_CMTVRPTW_SP solve(const Parameter_CMTVRPTW_SP& parameter);
 };
 
 class Parameter_CMTVRPTW_ArcFlow {
@@ -52,7 +60,7 @@ public:
 
 double maxNumCoexist(const bool ArcFlowRatherThanBP, const int maxNumVehicles, const vector<Label_TimePath>& selectedStructures);
 
-Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput);
+Solution_CMTVRPTW_SP CMTVRPTW_SP(const string& strInput);
 void setObjective(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X);
 void setConstraintsX(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X);
 void setConstraintsTimeWindow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y);

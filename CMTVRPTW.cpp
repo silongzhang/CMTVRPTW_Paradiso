@@ -27,8 +27,8 @@ double maxNumCoexist(const bool ArcFlowRatherThanBP, const int maxNumVehicles, c
 }
 
 
-Solution_OPRE_2019_1874 Framework_OPRE_2019_1874::solve(const Parameter_OPRE_2019_1874& parameter) {
-	Solution_OPRE_2019_1874 solution;
+Solution_CMTVRPTW_SP Framework_CMTVRPTW_SP::solve(const Parameter_CMTVRPTW_SP& parameter) {
+	Solution_CMTVRPTW_SP solution;
 	solution.status = OptimalityStatus::Infeasible;
 	solution.objective = InfinityPos;
 	try {
@@ -99,10 +99,10 @@ Solution_OPRE_2019_1874 Framework_OPRE_2019_1874::solve(const Parameter_OPRE_201
 }
 
 
-Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput) {
-	Solution_OPRE_2019_1874 solution;
+Solution_CMTVRPTW_SP run_OPRE_2019_1874(const string& strInput) {
+	Solution_CMTVRPTW_SP solution;
 	try {
-		Parameter_OPRE_2019_1874 parameter;
+		Parameter_CMTVRPTW_SP parameter;
 		parameter.gapInit = 0.05;
 		parameter.gapIncre = 0.01;
 
@@ -113,7 +113,7 @@ Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput) {
 		parameter.input_VRPTW.constrainResource = { true,false,true };
 		parameter.input_VRPTW.preprocess();
 
-		Framework_OPRE_2019_1874 frame;
+		Framework_CMTVRPTW_SP frame;
 		solution = frame.solve(parameter);
 	}
 	catch (const exception& exc) {
@@ -419,52 +419,4 @@ void Test_CMTVRPTW_ArcFlow(const string& outFile) {
 	}
 }
 
-
-// ******************************************************************* //
-ILOLAZYCONSTRAINTCALLBACK2(LazyCallback_Capacity, Parameter_CMTVRPTW_ArcFlow, parameter, IloBoolVarArray2, X) {
-	try {
-		const int NUM = X.getSize();
-		vector<vector<bool>> graph(NUM, vector<bool>(NUM));
-		for (int i = 0; i < NUM; ++i) {
-			for (int j = 0; j < NUM; ++j) {
-				if (!equalToReal(getValue(X[i][j]), IloTrue, PPM) && !equalToReal(getValue(X[i][j]), IloFalse, PPM)) throw exception();
-				graph[i][j] = equalToReal(getValue(X[i][j]), IloTrue, PPM) ? true : false;
-			}
-		}
-
-		vector<vector<int>> whole;
-		for (int j = 1; j < NUM; ++j) {
-			if (graph[0][j]) {
-				whole.push_back(getPath(unordered_set<int>(), graph, make_pair(0, j)));
-			}
-		}
-
-		vector<vector<int>> elementary;
-		for (const auto& longPath : whole) {
-			vector<vector<int>> shortPaths = parameter.getPaths(longPath);
-			for (const auto& elem : shortPaths) {
-				if (elem.size() < 2 || !parameter.isDepot(elem.front()) || !parameter.isDepot(elem.back())) throw exception();
-				elementary.push_back(elem);
-			}
-		}
-
-		for (const auto& elem : elementary) {
-			double quantity = 0;
-			IloExpr expr(getEnv());
-			auto pre = elem.begin();
-			for (auto suc = pre + 1; suc != elem.end(); ++pre, ++suc) {
-				quantity += parameter.Quantity[*pre][*suc];
-				expr += parameter.Quantity[*pre][*suc] * X[*pre][*suc];
-			}
-			if (greaterThanReal(quantity, parameter.Capacity, PPM)) {
-				add(expr <= parameter.Capacity);
-			}
-			expr.end();
-		}
-	}
-	catch (const exception& exc) {
-		printErrorAndExit("LazyCallback_Capacity", exc);
-	}
-}
-// ******************************************************************* //
 
