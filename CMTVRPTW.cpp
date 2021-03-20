@@ -249,8 +249,8 @@ void reduceSymmetry(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model,
 }
 
 
-double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output) {
-	double result = -1;
+tuple<double, double, double> CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output) {
+	tuple<double, double, double> result = make_tuple(-1, -1, -1);
 	IloEnv env;
 	try {
 		const int N = parameter.N, K = parameter.K;
@@ -279,11 +279,20 @@ double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& ou
 
 		// Solve the model.
 		IloCplex cplex(model);
+		cplex.setParam(IloCplex::Param::TimeLimit, parameter.timeLimit);
 		cplex.solve();
 
-		env.out() << "solution status is " << cplex.getStatus() << endl;
-		env.out() << "solution value  is " << cplex.getObjValue() << endl;
-		result = cplex.getObjValue();
+		IloAlgorithm::Status status = cplex.getStatus();
+		env.out() << "solution status is " << status << endl;
+		if (equalToReal(status, IloAlgorithm::Optimal, PPM) || equalToReal(status, IloAlgorithm::Feasible, PPM)) {
+			double objective = cplex.getObjValue();
+			double gap = cplex.getMIPRelativeGap();
+			double time = cplex.getDetTime() / Thousand;
+			result = make_tuple(objective, gap, time);
+			env.out() << "solution value  is " << get<0>(result) << endl;
+			env.out() << "solution gap    is " << get<1>(result) << endl;
+			env.out() << "elapsed  time   is " << get<2>(result) << endl;
+		}
 	}
 	catch (const exception& exc) {
 		printErrorAndExit("CMTVRPTW_ArcFlow", exc);
@@ -293,8 +302,8 @@ double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& ou
 }
 
 
-double CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostream& output) {
-	double result = InfinityPos;
+tuple<double, double, double> CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostream& output) {
+	tuple<double, double, double> result = make_tuple(-1, -1, -1);
 	try {
 		Data_Input_VRPTW input_VRPTW;
 		readFromFileVRPTW(input_VRPTW, strInput);
@@ -326,6 +335,7 @@ double CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostrea
 			}
 		}
 
+		parameter.timeLimit = 3600;
 		result = CMTVRPTW_ArcFlow(parameter, output);
 	}
 	catch (const exception& exc) {

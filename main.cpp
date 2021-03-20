@@ -10,7 +10,7 @@
 int main(int argc, char** argv) {
 	string strInput = "data//CMTVRPTW//Solomon Type 2 - 25//C201.txt";
 
-	run_OPRE_2019_1874(strInput);
+	//run_OPRE_2019_1874(strInput);
 
 	const int numDummyDepots = 10;
 	CMTVRPTW_ArcFlow(strInput, numDummyDepots, cout);

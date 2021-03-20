@@ -40,6 +40,8 @@ public:
 	vector<pair<TimeType, TimeType>> TimeWindow;
 	vector<vector<bool>> ExistingArcs;
 
+	double timeLimit;
+
 	bool isDepot(const int i) const { return i == 0 || (N <= i && i <= N + K); }
 	vector<int> depotIndex(const vector<int>& route) const;
 	vector<vector<int>> getPaths(const vector<int>& route) const;
@@ -52,6 +54,6 @@ void setConstraintsX(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model
 void setConstraintsTimeWindow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y);
 void setConstraintsCapacity(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Z);
 void reduceSymmetry(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y);
-double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output);
-double CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostream& output);
+tuple<double, double, double> CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output);
+tuple<double, double, double> CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostream& output);
 

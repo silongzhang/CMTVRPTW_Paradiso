@@ -2,6 +2,7 @@
 
 #include"Header.h"
 
+constexpr auto Thousand = 1000;
 constexpr auto TwentyFour = 24;
 constexpr auto Ten = 10;
 constexpr auto Seven = 7;
