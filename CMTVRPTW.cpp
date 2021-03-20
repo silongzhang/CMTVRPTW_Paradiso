@@ -205,6 +205,27 @@ void setConstraintsTimeWindow(const Parameter_CMTVRPTW_ArcFlow& parameter, IloMo
 }
 
 
+void setConstraintsCapacity(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Z) {
+	try {
+		for (int i = 0; i < X.getSize(); ++i) {
+			if (parameter.isDepot(i)) {
+				model.add(Z[i] == 0);
+			}
+			for (int j = 0; j < X[i].getSize(); ++j) {
+				if (!parameter.isDepot(j) && parameter.ExistingArcs[i][j]) {
+					const double q = parameter.QuantityNode[j];
+					const double M = parameter.Capacity + q;
+					model.add(Z[i] + q - Z[j] <= (1 - X[i][j]) * M);
+				}
+			}
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("setConstraintsCapacity", exc);
+	}
+}
+
+
 void reduceSymmetry(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X, IloNumVarArray Y) {
 	try {
 		auto env = model.getEnv();
@@ -228,6 +249,93 @@ void reduceSymmetry(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model,
 }
 
 
+double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output) {
+	double result = -1;
+	IloEnv env;
+	try {
+		const int N = parameter.N, K = parameter.K;
+		// Define the variables.
+		IloBoolVarArray2 X(env, N + K + 1);
+		for (int i = 0; i < X.getSize(); ++i) {
+			X[i] = IloBoolVarArray(env, N + K + 1);
+		}
+
+		IloNumArray early(env, N + K + 1), late(env, N + K + 1);
+		for (int i = 0; i < early.getSize(); ++i) {
+			early[i] = parameter.TimeWindow[i].first;
+			late[i] = parameter.TimeWindow[i].second;
+		}
+		IloNumVarArray Y(env, early, late);
+
+		IloNumVarArray Z(env, N + K + 1, 0, parameter.Capacity);
+
+		// Define the model.
+		IloModel model(env);
+		setObjective(parameter, model, X);
+		setConstraintsX(parameter, model, X);
+		setConstraintsTimeWindow(parameter, model, X, Y);
+		setConstraintsCapacity(parameter, model, X, Z);
+		reduceSymmetry(parameter, model, X, Y);
+
+		// Solve the model.
+		IloCplex cplex(model);
+		cplex.solve();
+
+		env.out() << "solution status is " << cplex.getStatus() << endl;
+		env.out() << "solution value  is " << cplex.getObjValue() << endl;
+		result = cplex.getObjValue();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("CMTVRPTW_ArcFlow", exc);
+	}
+	env.end();
+	return result;
+}
+
+
+double CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostream& output) {
+	double result = InfinityPos;
+	try {
+		Data_Input_VRPTW input_VRPTW;
+		readFromFileVRPTW(input_VRPTW, strInput);
+		input_VRPTW.constrainResource = { true,false,true };
+		input_VRPTW.preprocess();
+
+		Parameter_CMTVRPTW_ArcFlow parameter;
+		parameter.V = input_VRPTW.MaxNumVehicles;
+		parameter.Capacity = input_VRPTW.capacity;
+		parameter.N = input_VRPTW.NumVertices;
+		parameter.K = numDummyDepots;
+
+		const int NUM = parameter.N + parameter.K + 1;
+		parameter.Quantity = parameter.Distance = parameter.Time = vector<vector<double>>(NUM, vector<double>(NUM));
+		parameter.QuantityNode = vector<double>(NUM);
+		parameter.TimeWindow = vector<pair<double, double>>(NUM);
+		parameter.ExistingArcs = vector<vector<bool>>(NUM, vector<bool>(NUM));
+
+		for (int i = 0; i < NUM; ++i) {
+			const int I = parameter.realIndex(i);
+			parameter.QuantityNode[i] = 2 * input_VRPTW.Quantity[0][I];
+			parameter.TimeWindow[i] = input_VRPTW.TimeWindow[I];
+			for (int j = 0; j < NUM; ++j) {
+				const int J = parameter.realIndex(j);
+				parameter.Quantity[i][j] = input_VRPTW.Quantity[I][J];
+				parameter.Distance[i][j] = input_VRPTW.Distance[I][J];
+				parameter.Time[i][j] = input_VRPTW.Time[I][J];
+				parameter.ExistingArcs[i][j] = input_VRPTW.ExistingArcs[I][J];
+			}
+		}
+
+		result = CMTVRPTW_ArcFlow(parameter, output);
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("CMTVRPTW_ArcFlow", exc);
+	}
+	return result;
+}
+
+
+// ******************************************************************* //
 ILOLAZYCONSTRAINTCALLBACK2(LazyCallback_Capacity, Parameter_CMTVRPTW_ArcFlow, parameter, IloBoolVarArray2, X) {
 	try {
 		const int NUM = X.getSize();
@@ -273,86 +381,5 @@ ILOLAZYCONSTRAINTCALLBACK2(LazyCallback_Capacity, Parameter_CMTVRPTW_ArcFlow, pa
 		printErrorAndExit("LazyCallback_Capacity", exc);
 	}
 }
-
-
-double CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output) {
-	double result = -1;
-	IloEnv env;
-	try {
-		const int N = parameter.N, K = parameter.K;
-		// Define the variables.
-		IloBoolVarArray2 X(env, N + K + 1);
-		for (int i = 0; i < X.getSize(); ++i) {
-			X[i] = IloBoolVarArray(env, N + K + 1);
-		}
-
-		IloNumArray early(env, N + K + 1), late(env, N + K + 1);
-		for (int i = 0; i < early.getSize(); ++i) {
-			early[i] = parameter.TimeWindow[i].first;
-			late[i] = parameter.TimeWindow[i].second;
-		}
-		IloNumVarArray Y(env, early, late);
-
-		// Define the model.
-		IloModel model(env);
-		setObjective(parameter, model, X);
-		setConstraintsX(parameter, model, X);
-		setConstraintsTimeWindow(parameter, model, X, Y);
-		reduceSymmetry(parameter, model, X, Y);
-
-		// Solve the model.
-		IloCplex cplex(model);
-		cplex.use(LazyCallback_Capacity(env, parameter, X));
-		cplex.solve();
-
-		env.out() << "solution status is " << cplex.getStatus() << endl;
-		env.out() << "solution value  is " << cplex.getObjValue() << endl;
-		result = cplex.getObjValue();
-	}
-	catch (const exception& exc) {
-		printErrorAndExit("CMTVRPTW_ArcFlow", exc);
-	}
-	env.end();
-	return result;
-}
-
-
-double CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostream& output) {
-	double result = InfinityPos;
-	try {
-		Data_Input_VRPTW input_VRPTW;
-		readFromFileVRPTW(input_VRPTW, strInput);
-		input_VRPTW.constrainResource = { true,false,true };
-		input_VRPTW.preprocess();
-
-		Parameter_CMTVRPTW_ArcFlow parameter;
-		parameter.V = input_VRPTW.MaxNumVehicles;
-		parameter.Capacity = input_VRPTW.capacity;
-		parameter.N = input_VRPTW.NumVertices;
-		parameter.K = numDummyDepots;
-
-		const int NUM = parameter.N + parameter.K + 1;
-		parameter.Quantity = parameter.Distance = parameter.Time = vector<vector<double>>(NUM, vector<double>(NUM));
-		parameter.TimeWindow = vector<pair<double, double>>(NUM);
-		parameter.ExistingArcs = vector<vector<bool>>(NUM, vector<bool>(NUM));
-
-		for (int i = 0; i < NUM; ++i) {
-			const int I = parameter.realIndex(i);
-			parameter.TimeWindow[i] = input_VRPTW.TimeWindow[I];
-			for (int j = 0; j < NUM; ++j) {
-				const int J = parameter.realIndex(j);
-				parameter.Quantity[i][j] = input_VRPTW.Quantity[I][J];
-				parameter.Distance[i][j] = input_VRPTW.Distance[I][J];
-				parameter.Time[i][j] = input_VRPTW.Time[I][J];
-				parameter.ExistingArcs[i][j] = input_VRPTW.ExistingArcs[I][J];
-			}
-		}
-
-		result = CMTVRPTW_ArcFlow(parameter, output);
-	}
-	catch (const exception& exc) {
-		printErrorAndExit("CMTVRPTW_ArcFlow", exc);
-	}
-	return result;
-}
+// ******************************************************************* //
 
