@@ -1,4 +1,5 @@
 #include"BC.h"
+#include"CMTVRPTW.h"
 
 
 bool operator<(const NODE_VRPTW_BC& lhs, const NODE_VRPTW_BC& rhs) {
@@ -231,30 +232,6 @@ NODE_VRPTW_BC initBCNode(const Parameter_VRPTW_BC& parameter) {
 }
 
 
-double maxNumCoexist(const int maxNumVehicles, const vector<Label_TimePath>& selectedStructures) {
-	double numCoexist = -1;
-	try {
-		Data_Input_VRPTW input_TOPTW = constructDataVRPTW(maxNumVehicles, selectedStructures);
-		
-		//Parameter_BP parameter_BP;
-		//parameter_BP.weightLB = parameter_BP.weightDepth = 1;
-		//parameter_BP.allowPrintLog = false;
-		//BBNODE solTOPTW = BPAlgorithm(input_TOPTW, parameter_BP, cout);
-		//if (!solTOPTW.solution.feasible || !solTOPTW.solution.integer) throw exception();
-		//numCoexist = -solTOPTW.solution.objective;
-
-		Parameter_TOPTW_ArcFlow parameter_ArcFlow;
-		parameter_ArcFlow.input_VRPTW = input_TOPTW;
-		parameter_ArcFlow.allowPrintLog = false;
-		numCoexist = TOPTW_ArcFlow(parameter_ArcFlow, cout);
-	}
-	catch (const exception& exc) {
-		printErrorAndExit("maxNumCoexist", exc);
-	}
-	return numCoexist;
-}
-
-
 // Get indices of structures which traverse the arc.
 vector<int> traverse(const Parameter_VRPTW_BC& parameter, int tail, int head) {
 	vector<int> result;
@@ -333,7 +310,7 @@ NODE_VRPTW_BC BCAlgorithm(const Parameter_VRPTW_BC& parameter, ostream& output) 
 					++info.prunedInteger;
 					print(parameter.allowPrintLog, output, "Pruned due to integer.");
 
-					double numCoexist = maxNumCoexist(parameter.input_VRPTW.MaxNumVehicles, worker.solution.UB_Integer_Solution);
+					double numCoexist = maxNumCoexist(parameter.ArcFlowRatherThanBP, parameter.input_VRPTW.MaxNumVehicles, worker.solution.UB_Integer_Solution);
 					if (lessThanReal(numCoexist, 1, PPM)) throw exception("The maximum number of structures which can coexist is false.");
 
 					if (greaterThanReal(worker.solution.UB_Integer_Solution.size(), numCoexist, PPM)) {

@@ -1,6 +1,32 @@
 #include"CMTVRPTW.h"
 
 
+double maxNumCoexist(const bool ArcFlowRatherThanBP, const int maxNumVehicles, const vector<Label_TimePath>& selectedStructures) {
+	double numCoexist = -1;
+	try {
+		Data_Input_VRPTW input_TOPTW = constructDataVRPTW(maxNumVehicles, selectedStructures);
+		if (ArcFlowRatherThanBP) {
+			Parameter_TOPTW_ArcFlow parameter_ArcFlow;
+			parameter_ArcFlow.input_VRPTW = input_TOPTW;
+			parameter_ArcFlow.allowPrintLog = false;
+			numCoexist = TOPTW_ArcFlow(parameter_ArcFlow, cout);
+		}
+		else {
+			Parameter_BP parameter_BP;
+			parameter_BP.weightLB = parameter_BP.weightDepth = 1;
+			parameter_BP.allowPrintLog = false;
+			BBNODE solTOPTW = BPAlgorithm(input_TOPTW, parameter_BP, cout);
+			if (!solTOPTW.solution.feasible || !solTOPTW.solution.integer) throw exception();
+			numCoexist = -solTOPTW.solution.objective;
+		}
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("maxNumCoexist", exc);
+	}
+	return numCoexist;
+}
+
+
 Solution_OPRE_2019_1874 Framework_OPRE_2019_1874::solve(const Parameter_OPRE_2019_1874& parameter) {
 	Solution_OPRE_2019_1874 solution;
 	solution.status = OptimalityStatus::Infeasible;
@@ -34,32 +60,36 @@ Solution_OPRE_2019_1874 Framework_OPRE_2019_1874::solve(const Parameter_OPRE_201
 
 			last = clock();
 			cout << endl << "**************************************" << endl;
-			Parameter_VRPTW_BC parameter_BC;
-			parameter_BC.input_VRPTW = parameter.input_VRPTW;
-			parameter_BC.columnPool = resultReduction;
-			parameter_BC.weightLB = parameter_BC.weightDepth = 1;
-			parameter_BC.allowPrintLog = true;
-			NODE_VRPTW_BC resultBC = BCAlgorithm(parameter_BC, cout);
-			cout << "######################################" << endl << endl;
-			if (resultBC.solution.feasible) {
-				solution.objective = resultBC.solution.objective;
-				solution.routes = resultBC.solution.UB_Integer_Solution;
-				solution.status = greaterThanReal(resultBC.solution.objective, UB_Guess, PPM) ? OptimalityStatus::Feasible : OptimalityStatus::Optimal;
+			if (parameter.BCRatherThanCuttingPlane) {
+				Parameter_VRPTW_BC parameter_BC;
+				parameter_BC.input_VRPTW = parameter.input_VRPTW;
+				parameter_BC.columnPool = resultReduction;
+				parameter_BC.weightLB = parameter_BC.weightDepth = 1;
+				parameter_BC.ArcFlowRatherThanBP = parameter.ArcFlowRatherThanBP;
+				parameter_BC.allowPrintLog = true;
+				NODE_VRPTW_BC resultBC = BCAlgorithm(parameter_BC, cout);
+				cout << "######################################" << endl << endl;
+				if (resultBC.solution.feasible) {
+					solution.objective = resultBC.solution.objective;
+					solution.routes = resultBC.solution.UB_Integer_Solution;
+					solution.status = greaterThanReal(resultBC.solution.objective, UB_Guess, PPM) ?
+						OptimalityStatus::Feasible : OptimalityStatus::Optimal;
+				}
 			}
-
-			//last = clock();
-			//cout << endl << "**************************************" << endl;
-			//Parameter_CuttingPlane parameter_CuttingPlane;
-			//parameter_CuttingPlane.input_VRPTW = parameter.input_VRPTW;
-			//parameter_CuttingPlane.columnPool = resultReduction;
-			//Solution_CuttingPlane resultCuttingPlane = CuttingPlaneAlgorithm(parameter_CuttingPlane);
-			//cout << "######################################" << endl << endl;
-
-			//if (resultCuttingPlane.status == OptimalityStatus::Optimal) {
-			//	solution.objective = resultCuttingPlane.objective;
-			//	solution.routes = resultCuttingPlane.routes;
-			//	solution.status = greaterThanReal(resultCuttingPlane.objective, UB_Guess, PPM) ? OptimalityStatus::Feasible : OptimalityStatus::Optimal;
-			//}
+			else {
+				Parameter_CuttingPlane parameter_CuttingPlane;
+				parameter_CuttingPlane.input_VRPTW = parameter.input_VRPTW;
+				parameter_CuttingPlane.columnPool = resultReduction;
+				parameter_CuttingPlane.ArcFlowRatherThanBP = parameter.ArcFlowRatherThanBP;
+				Solution_CuttingPlane resultCuttingPlane = CuttingPlaneAlgorithm(parameter_CuttingPlane);
+				cout << "######################################" << endl << endl;
+				if (resultCuttingPlane.status == OptimalityStatus::Optimal) {
+					solution.objective = resultCuttingPlane.objective;
+					solution.routes = resultCuttingPlane.routes;
+					solution.status = greaterThanReal(resultCuttingPlane.objective, UB_Guess, PPM) ?
+						OptimalityStatus::Feasible : OptimalityStatus::Optimal;
+				}
+			}
 		}
 	}
 	catch (const exception& exc) {
@@ -75,6 +105,9 @@ Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput) {
 		Parameter_OPRE_2019_1874 parameter;
 		parameter.gapInit = 0.05;
 		parameter.gapIncre = 0.01;
+
+		parameter.BCRatherThanCuttingPlane = true;
+		parameter.ArcFlowRatherThanBP = true;
 
 		readFromFileVRPTW(parameter.input_VRPTW, strInput);
 		parameter.input_VRPTW.constrainResource = { true,false,true };

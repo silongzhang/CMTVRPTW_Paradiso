@@ -7,6 +7,8 @@ public:
 	Data_Input_VRPTW input_VRPTW;
 	double gapInit;
 	double gapIncre;
+	bool BCRatherThanCuttingPlane;				// true: use BC in the last step; false: use cutting plane method.
+	bool ArcFlowRatherThanBP;					// true: solve TOPTW by the arc-flow model; false: by BP.
 };
 
 class Solution_OPRE_2019_1874 {
@@ -47,6 +49,8 @@ public:
 	vector<vector<int>> getPaths(const vector<int>& route) const;
 	int realIndex(const int i) const { return i < N ? i : 0; }
 };
+
+double maxNumCoexist(const bool ArcFlowRatherThanBP, const int maxNumVehicles, const vector<Label_TimePath>& selectedStructures);
 
 Solution_OPRE_2019_1874 run_OPRE_2019_1874(const string& strInput);
 void setObjective(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model, IloBoolVarArray2 X);

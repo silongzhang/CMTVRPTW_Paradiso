@@ -1,4 +1,5 @@
 #include"CuttingPlane.h"
+#include"CMTVRPTW.h"
 
 
 void setObjectiveCuttingPlane(const vector<Label_TimePath>& structures, IloModel model, TypeX x) {
@@ -217,16 +218,8 @@ ILOLAZYCONSTRAINTCALLBACK3(CoexistLazyConstraint, const Parameter_CuttingPlane&,
 			selectedStructures.push_back(parameter.columnPool[i]);
 		}
 
-		// Solve the TOPTW determined by selected structures.		
-		Data_Input_VRPTW input_TOPTW = constructDataVRPTW(parameter.input_VRPTW.MaxNumVehicles, selectedStructures);
-		Parameter_BP parameter_BP;
-		parameter_BP.weightLB = parameter_BP.weightDepth = 1;
-		parameter_BP.allowPrintLog = false;
-		BBNODE solTOPTW = BPAlgorithm(input_TOPTW, parameter_BP, cout);
-		if (!solTOPTW.solution.feasible || !solTOPTW.solution.integer) throw exception();
-
 		// Add lazy constraints.
-		double numCoexist = -solTOPTW.solution.objective;
+		double numCoexist = maxNumCoexist(parameter.ArcFlowRatherThanBP, parameter.input_VRPTW.MaxNumVehicles, selectedStructures);
 		if (greaterThanReal(selected.size(), numCoexist, PPM)) {
 			solution.SFCSet.push_back(make_pair(selected, numCoexist));
 

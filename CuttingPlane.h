@@ -7,6 +7,7 @@ class Parameter_CuttingPlane {
 public:
 	Data_Input_VRPTW input_VRPTW;
 	vector<Label_TimePath> columnPool;
+	bool ArcFlowRatherThanBP;					// true: solve TOPTW by the arc-flow model; false: by BP.
 };
 
 class Solution_CuttingPlane {
