@@ -374,7 +374,7 @@ tuple<double, double, double> CMTVRPTW_ArcFlow(const string& strInput, const int
 			}
 		}
 
-		parameter.timeLimit = 3600;
+		parameter.timeLimit = 3600 * 2;
 		result = CMTVRPTW_ArcFlow(parameter, output);
 	}
 	catch (const exception& exc) {
