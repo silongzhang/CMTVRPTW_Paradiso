@@ -16,23 +16,22 @@ public:
 	OptimalityStatus status;
 	double objective;
 	vector<Label_TimePath> routes;
-};
 
-class Framework_CMTVRPTW_SP {
-public:
-	double gapGuess;
-	double UB_Guess;
 	double LB_1;
 	double time_LB_1;
 	int size_1;
 	double time_enumeration;
 	double LB_2;
 	double time_LB_2;
-	vector<Label_TimePath> columnPool;
-	int nSFC;
-	int nNode;
+	int size_2;
 	double time_BC;
-	double time_total;
+};
+
+class Framework_CMTVRPTW_SP {
+public:
+	double gapGuess;
+	double UB_Guess;
+	vector<Label_TimePath> columnPool;
 
 	Solution_CMTVRPTW_SP solve(const Parameter_CMTVRPTW_SP& parameter);
 };
@@ -69,4 +68,5 @@ void reduceSymmetry(const Parameter_CMTVRPTW_ArcFlow& parameter, IloModel model,
 tuple<double, double, double> CMTVRPTW_ArcFlow(const Parameter_CMTVRPTW_ArcFlow& parameter, ostream& output);
 tuple<double, double, double> CMTVRPTW_ArcFlow(const string& strInput, const int numDummyDepots, ostream& output);
 void Test_CMTVRPTW_ArcFlow(const string& outFile);
+void Test_CMTVRPTW_SP(const string& outFile);
 

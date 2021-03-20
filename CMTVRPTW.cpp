@@ -37,33 +37,38 @@ Solution_CMTVRPTW_SP Framework_CMTVRPTW_SP::solve(const Parameter_CMTVRPTW_SP& p
 			last = clock();
 			cout << "**************************************" << endl;
 			Solution_VRPTW_CG result_VRPTW_CG_LB = lbAtCGRootNodeVRPTW(parameter.input_VRPTW);
-			LB_1 = result_VRPTW_CG_LB.getCost();
-			UB_Guess = min(solution.objective, (1 + gapGuess) * LB_1);
-			cout << "Time: " << numToStr(runTime(last)) << '\t' << "Lower Bound 1: " << LB_1 << "\t" << "UB_Guess: " << UB_Guess << endl;
+			solution.LB_1 = result_VRPTW_CG_LB.getCost();
+			UB_Guess = min(solution.objective, (1 + gapGuess) * solution.LB_1);
+			solution.time_LB_1 = runTime(last);
+			cout << "Time: " << numToStr(solution.time_LB_1) << '\t' << "Lower Bound 1: " << solution.LB_1 << "\t" << "UB_Guess: " << UB_Guess << endl;
 
 			last = clock();
 			cout << endl << "**************************************" << endl;
-			Map_Label_TimePath resultEnumeration = EnumerationStructure(result_VRPTW_CG_LB.getInput(), UB_Guess - LB_1);
-			cout << "Time: " << numToStr(runTime(last)) << '\t' << "The number of structures: " << resultEnumeration.getSize() << endl;
+			Map_Label_TimePath resultEnumeration = EnumerationStructure(result_VRPTW_CG_LB.getInput(), UB_Guess - solution.LB_1);
+			solution.size_1 = resultEnumeration.getSize();
+			solution.time_enumeration = runTime(last);
+			cout << "Time: " << numToStr(solution.time_enumeration) << '\t' << "The number of structures: " << solution.size_1 << endl;
 
 			last = clock();
 			cout << endl << "**************************************" << endl;
 			outputRSFC resultRSFC;
 			RSFC(resultRSFC, parameter.input_VRPTW, resultEnumeration);
-			LB_2 = resultRSFC.objective;
-			cout << "Time: " << numToStr(runTime(last)) << '\t' << "Lower Bound 2: " << LB_2 << endl;
+			solution.LB_2 = resultRSFC.objective;
+			solution.time_LB_2 = runTime(last);
+			cout << "Time: " << numToStr(solution.time_LB_2) << '\t' << "Lower Bound 2: " << solution.LB_2 << endl;
 
 			last = clock();
 			cout << endl << "**************************************" << endl;
-			vector<Label_TimePath> resultReduction = StructureReduction(parameter.input_VRPTW, resultRSFC, UB_Guess - LB_2);
-			cout << "Time: " << numToStr(runTime(last)) << '\t' << "The number of structures: " << resultReduction.size() << endl;
+			vector<Label_TimePath> columnPool = StructureReduction(parameter.input_VRPTW, resultRSFC, UB_Guess - solution.LB_2);
+			solution.size_2 = columnPool.size();
+			cout << "Time: " << numToStr(runTime(last)) << '\t' << "The number of structures: " << solution.size_2 << endl;
 
 			last = clock();
 			cout << endl << "**************************************" << endl;
 			if (parameter.BCRatherThanCuttingPlane) {
 				Parameter_VRPTW_BC parameter_BC;
 				parameter_BC.input_VRPTW = parameter.input_VRPTW;
-				parameter_BC.columnPool = resultReduction;
+				parameter_BC.columnPool = columnPool;
 				parameter_BC.weightLB = parameter_BC.weightDepth = 1;
 				parameter_BC.ArcFlowRatherThanBP = parameter.ArcFlowRatherThanBP;
 				parameter_BC.allowPrintLog = true;
@@ -79,7 +84,7 @@ Solution_CMTVRPTW_SP Framework_CMTVRPTW_SP::solve(const Parameter_CMTVRPTW_SP& p
 			else {
 				Parameter_CuttingPlane parameter_CuttingPlane;
 				parameter_CuttingPlane.input_VRPTW = parameter.input_VRPTW;
-				parameter_CuttingPlane.columnPool = resultReduction;
+				parameter_CuttingPlane.columnPool = columnPool;
 				parameter_CuttingPlane.ArcFlowRatherThanBP = parameter.ArcFlowRatherThanBP;
 				Solution_CuttingPlane resultCuttingPlane = CuttingPlaneAlgorithm(parameter_CuttingPlane);
 				cout << "######################################" << endl << endl;
@@ -90,6 +95,7 @@ Solution_CMTVRPTW_SP Framework_CMTVRPTW_SP::solve(const Parameter_CMTVRPTW_SP& p
 						OptimalityStatus::Feasible : OptimalityStatus::Optimal;
 				}
 			}
+			solution.time_BC = runTime(last);
 		}
 	}
 	catch (const exception& exc) {
@@ -99,7 +105,7 @@ Solution_CMTVRPTW_SP Framework_CMTVRPTW_SP::solve(const Parameter_CMTVRPTW_SP& p
 }
 
 
-Solution_CMTVRPTW_SP run_OPRE_2019_1874(const string& strInput) {
+Solution_CMTVRPTW_SP CMTVRPTW_SP(const string& strInput) {
 	Solution_CMTVRPTW_SP solution;
 	try {
 		Parameter_CMTVRPTW_SP parameter;
@@ -407,7 +413,7 @@ void Test_CMTVRPTW_ArcFlow(const string& outFile) {
 				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << endl;
 				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t' << inputVRPTW.density << '\t';
 
-				const int numDummyDepots = 10;
+				const int numDummyDepots = 5;
 				auto result = CMTVRPTW_ArcFlow(strInput, numDummyDepots, cout);
 				os << get<0>(result) << '\t' << get<1>(result) << '\t' << get<2>(result) << endl;
 			}
@@ -419,4 +425,49 @@ void Test_CMTVRPTW_ArcFlow(const string& outFile) {
 	}
 }
 
+
+void Test_CMTVRPTW_SP(const string& outFile) {
+	try {
+		ofstream os(outFile);
+		if (!os) throw exception();
+		os << "Instance" << '\t' << "Vertices" << '\t' << "Capacity" << '\t' << "Density" << '\t'
+			<< "LB_1" << '\t' << "Gap_1" << '\t' << "Time_LB_1" << '\t' << "Size_1" << '\t' << "Time_Enumeration" << '\t'
+			<< "LB_2" << '\t' << "Gap_2" << '\t' << "Time_LB_2" << '\t' << "Size_2" << '\t' << "Time_BC" << '\t'
+			<< "Objective" << '\t' << "Time_Total" << endl;
+
+		vector<string> folders = { "data//CMTVRPTW//Solomon Type 2 - 25//",
+			"data//CMTVRPTW//Solomon Type 2 - 40//",
+			"data//CMTVRPTW//Solomon Type 2 - 50//" };
+		vector<string> names;
+		getFiles(folders[0], vector<string>(), names);
+
+		for (const auto& folder : folders) {
+			for (const auto& name : names) {
+				//if (folder == "data//CMTVRPTW//Solomon Type 2 - 50//" && name[0] == 'R' && name[1] == '2') continue;
+
+				string strInput = folder + name;
+				Data_Input_VRPTW inputVRPTW;
+				inputVRPTW.constrainResource = { true,false,true };
+				readFromFileVRPTW(inputVRPTW, strInput);
+				inputVRPTW.preprocess();
+
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "*****************************************" << endl;
+				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << endl;
+				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t' << inputVRPTW.density << '\t';
+
+				clock_t last = clock();
+				auto result = CMTVRPTW_SP(strInput);
+				os << result.LB_1 << '\t' << gap(result.LB_1, result.objective) << '\t' << result.time_LB_1 << '\t' << result.size_1 << '\t'
+					<< result.time_enumeration << '\t' << result.LB_2 << '\t' << gap(result.LB_2, result.objective) << '\t' << result.time_LB_2
+					<< '\t' << result.size_2 << '\t' << result.time_BC << '\t' << result.objective << '\t' << runTime(last) << endl;
+			}
+		}
+		os.close();
+	}
+	catch (const exception& exc) {
+		printErrorAndExit("Test_CMTVRPTW_ArcFlow", exc);
+	}
+}
 

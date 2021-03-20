@@ -38,4 +38,5 @@ pair<bool, int> outNode(const unordered_set<int>& excluded, const vector<vector<
 vector<int> getPath(const unordered_set<int>& excluded, const IloCplex& cplex, const IloBoolVarArray2& X, const pair<int, int>& arc);
 vector<int> getPath(const unordered_set<int>& excluded, const vector<vector<bool>>& X, const pair<int, int>& arc);
 vector<int> getPath(const unordered_set<int>& excluded, const IloCplex& cplex, const IloBoolVarArray2& X, int start);
+double gap(const double lhs, const double rhs);
 

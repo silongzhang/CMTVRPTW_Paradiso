@@ -205,3 +205,8 @@ vector<int> getPath(const unordered_set<int>& excluded, const IloCplex& cplex, c
 	return result;
 }
 
+
+double gap(const double lhs, const double rhs) {
+	return abs(lhs - rhs) / rhs;
+}
+
