@@ -441,29 +441,33 @@ void Test_CMTVRPTW_SP(const string& outFile) {
 			"data//CMTVRPTW//Solomon Type 2 - 50//" };
 		vector<string> names;
 		getFiles(folders[0], vector<string>(), names);
-
+		vector<string> inputs;
 		for (const auto& folder : folders) {
 			for (const auto& name : names) {
-				//if (folder == "data//CMTVRPTW//Solomon Type 2 - 50//" && name[0] == 'R' && name[1] == '2') continue;
-
-				string strInput = folder + name;
-				Data_Input_VRPTW inputVRPTW;
-				inputVRPTW.constrainResource = { true,false,true };
-				readFromFileVRPTW(inputVRPTW, strInput);
-				inputVRPTW.preprocess();
-
-				cout << "*****************************************" << endl;
-				cout << "*****************************************" << endl;
-				cout << "*****************************************" << endl;
-				cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << endl;
-				os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t' << inputVRPTW.density << '\t';
-
-				clock_t last = clock();
-				auto result = CMTVRPTW_SP(strInput);
-				os << result.LB_1 << '\t' << gap(result.LB_1, result.objective) << '\t' << result.time_LB_1 << '\t' << result.size_1 << '\t'
-					<< result.time_enumeration << '\t' << result.LB_2 << '\t' << gap(result.LB_2, result.objective) << '\t' << result.time_LB_2
-					<< '\t' << result.size_2 << '\t' << result.time_BC << '\t' << result.objective << '\t' << runTime(last) << endl;
+				inputs.push_back(folder + name);
 			}
+		}
+		set<int> ignore;
+		int start = 15;
+		for (int i = start; i < inputs.size(); ++i) {
+			if (ignore.find(i) != ignore.end()) continue;
+			string strInput = inputs[i];
+			Data_Input_VRPTW inputVRPTW;
+			inputVRPTW.constrainResource = { true,false,true };
+			readFromFileVRPTW(inputVRPTW, strInput);
+			inputVRPTW.preprocess();
+
+			cout << "*****************************************" << endl;
+			cout << "*****************************************" << endl;
+			cout << "*****************************************" << endl;
+			cout << "Instance: " << inputVRPTW.name << '\t' << "NumVertices: " << inputVRPTW.NumVertices << endl;
+			os << inputVRPTW.name << '\t' << inputVRPTW.NumVertices << '\t' << inputVRPTW.capacity << '\t' << inputVRPTW.density << '\t';
+
+			clock_t last = clock();
+			auto result = CMTVRPTW_SP(strInput);
+			os << result.LB_1 << '\t' << gap(result.LB_1, result.objective) << '\t' << result.time_LB_1 << '\t' << result.size_1 << '\t'
+				<< result.time_enumeration << '\t' << result.LB_2 << '\t' << gap(result.LB_2, result.objective) << '\t' << result.time_LB_2
+				<< '\t' << result.size_2 << '\t' << result.time_BC << '\t' << result.objective << '\t' << runTime(last) << endl;
 		}
 		os.close();
 	}
